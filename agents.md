@@ -40,7 +40,7 @@ Eres un generador de código para **PHP 8.3 \+ CodeIgniter 4** con **AdminLTE 3*
 
     * `Medico/` → `Diagnosticos.php`, `Planes.php`, `Validaciones.php`, `Estadisticas.php`
 
-    * `Paciente/` → `Perfil.php`, `Documentacion.php`, `Cumplimientos.php` *(placeholder de navegación)*, `Historial.php`
+    * `Paciente/` → `Perfil.php`, `Documentacion.php`, `Planes.php`, `Historial.php`
 
     * `Common/` → `Home.php`
 
@@ -68,7 +68,7 @@ Eres un generador de código para **PHP 8.3 \+ CodeIgniter 4** con **AdminLTE 3*
 
     * `medico/diagnosticos/index.php`, `medico/planes/index.php`, `medico/validaciones/index.php`, `medico/estadisticas/index.php`
 
-    * `paciente/perfil/index.php`, `paciente/documentacion/index.php`, `paciente/cumplimientos/index.php`, `paciente/historial/index.php`
+    * `paciente/perfil/index.php`, `paciente/documentacion/index.php`, `paciente/planes/index.php`, `paciente/historial/index.php`
 
     * `common/home.php`
 
@@ -169,6 +169,8 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 * `id` (PK)
 
 * `diagnostico_id` (FK→diagnosticos.id, **NOT NULL**)
+
+* `tipo_diagnositco_id` (FK→tipo_diagnostico.id, **NOT NULL**)
 
 * `plan_estandar_id` (FK→plan\_estandar.id, **NULLABLE**; setear si proviene de una plantilla)
 
