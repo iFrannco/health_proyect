@@ -4,20 +4,19 @@ namespace App\Entities;
 
 use CodeIgniter\Entity\Entity;
 
-class PlanCuidado extends Entity
+class Diagnostico extends Entity
 {
     protected $datamap = [];
     protected $dates   = [
         'created_at',
         'updated_at',
         'deleted_at',
-        'fecha_creacion',
-        'fecha_inicio',
-        'fecha_fin'
+        'fecha_creacion'
     ];
     protected $casts   = [
         'id' => 'integer',
-        'diagnostico_id' => 'integer',
-        'plan_estandar_id' => '?integer' // Permite nulos
+        'autor_user_id' => 'integer',
+        'destinatario_user_id' => 'integer',
+        'tipo_diagnostico_id' => 'integer'
     ];
 }

@@ -50,7 +50,7 @@ Eres un generador de código para **PHP 8.3 \+ CodeIgniter 4** con **AdminLTE 3*
 
   * `Helpers/` → `menu_helper.php`
 
-  * `Libraries/` → `CarePlanTemplate.php` *(materializa plantillas en actividades con fechas concretas)*
+  * `Libraries/` → `CarePlanTemplate.php` *(materializa plantillas en actividades con fechas concretas)*q
 
   * `Entities/` → `User.php`, `Diagnostico.php`, `PlanCuidado.php`, `Actividad.php`, `Documento.php`, `PlanEstandar.php`, `PlanEstandarActividad.php`
 
@@ -239,3 +239,17 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 * **Un** layout base.
 
 * **Sin** lógica de negocio en vistas/controladores: usar Models/Entities/Libraries.  
+
+* **Nomenclatura**:
+
+  * Los nombres de **variables, métodos y clases** deben estar en **español**.
+
+  * Utilizar `camelCase` para variables y métodos.
+
+  * Utilizar `PascalCase` (o `UpperCamelCase`) para nombres de clases (Controladores, Modelos, Entidades, etc.).
+
+* **Uso de Bibliotecas Externas**:
+
+  * **Restricción Principal**: Al generar código PHP, debes limitarte a usar soluciones nativas de PHP siempre que sea posible.
+
+  * **Excepción y Aprobación**: Si identificas un escenario donde una biblioteca externa es indispensable (por ejemplo, por razones de seguridad, complejidad o ahorro significativo de tiempo), debes detenerte. En ese momento, tu tarea es informarme sobre la biblioteca que consideras necesaria y justificar por qué es la única opción viable. Solo podrás proceder a implementarla después de recibir mi aprobación explícita.
