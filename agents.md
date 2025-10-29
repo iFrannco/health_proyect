@@ -52,9 +52,9 @@ Eres un generador de código para **PHP 8.3 \+ CodeIgniter 4** con **AdminLTE 3*
 
   * `Libraries/` → `CarePlanTemplate.php` *(materializa plantillas en actividades con fechas concretas)*
 
-  * `Entities/` → `User.php`, `Medico.php`, `Paciente.php`, `Diagnostico.php`, `PlanCuidado.php`, `Actividad.php`, `Documento.php`, `PlanEstandar.php`, `PlanEstandarActividad.php`
+  * `Entities/` → `User.php`, `Diagnostico.php`, `PlanCuidado.php`, `Actividad.php`, `Documento.php`, `PlanEstandar.php`, `PlanEstandarActividad.php`
 
-  * `Models/` → `UserModel.php`, `RoleModel.php`, `UserRoleModel.php`, `MedicoModel.php`, `PacienteModel.php`, `DiagnosticoModel.php`, `PlanCuidadoModel.php`, `ActividadModel.php`, `DocumentoModel.php`, `PlanEstandarModel.php`, `PlanEstandarActividadModel.php`, `EstadoActividadModel.php`
+  * `Models/` → `UserModel.php`, `RoleModel.php`, `DiagnosticoModel.php`, `PlanCuidadoModel.php`, `ActividadModel.php`, `DocumentoModel.php`, `PlanEstandarModel.php`, `PlanEstandarActividadModel.php`, `EstadoActividadModel.php`
 
   * `Views/`
 
@@ -94,11 +94,11 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 ## **Seguridad y roles**
 
-* Un usuario puede tener **uno o varios roles** → relación **N–N**.
+* Cada usuario tiene **exactamente un rol** → FK `usuarios.role_id` (N–1 contra `roles`).
 
-* Tablas: `usuarios`, `roles (slug: admin|medico|paciente)`, `usuario_rol (PK compuesta user_id, rol_id)`.
+* Tablas: `usuarios`, `roles (slug: admin|medico|paciente)`.
 
-* Perfiles 1–1: `medicos (user_id)`, `pacientes (user_id)`.
+* No existen perfiles separados (`medicos`/`pacientes`); los datos particulares viven en la propia fila de `usuarios`.
 
 * Filters:
 
@@ -114,25 +114,11 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 ### **`usuarios`**
 
-* `id` (PK), `dni`, `nombre`, `email` (UNIQUE), `password_hash`, `activo`, timestamps
+* `id` (PK), `dni`, `nombre`, `email` (UNIQUE), `password_hash`, `role_id` (FK→roles.id), `fecha_nac` (DATE NULL), `matricula` (VARCHAR NULL), `activo`, timestamps
 
 ### **`roles`**
 
 * `id` (PK), `slug` (UNIQUE: `admin|medico|paciente`), `nombre`
-
-### **`usuario_rol`**
-
-* `user_id` (FK→usuarios.id), `rol_id` (FK→roles.id)
-
-* **PK compuesta** (`user_id`, `rol_id`)
-
-### **`pacientes`**
-
-* `user_id` (PK/FK→usuarios.id), `fecha_nac`
-
-### **`medicos`**
-
-* `user_id` (PK/FK→usuarios.id), `matricula`
 
 ### **`tipo_diagnostico` *(catálogo fijo / hardcodeado)***
 
@@ -142,9 +128,9 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * `id` (PK)
 
-* `paciente_user_id` (FK→usuarios.id)
+* `autor_user_id` (FK→usuarios.id) — usuario que registra el diagnóstico
 
-* `medico_user_id` (FK→usuarios.id)
+* `destinatario_user_id` (FK→usuarios.id) — usuario al que aplica el diagnóstico
 
 * `tipo_diagnostico_id` (FK→tipo\_diagnostico.id)
 
@@ -178,7 +164,7 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * `fecha_creacion`, `fecha_inicio`, `fecha_fin`
 
-**Regla**: el paciente se obtiene transitivamente por `diagnostico → paciente_user_id`.
+**Regla**: el usuario destinatario se obtiene transitivamente por `diagnostico → destinatario_user_id`.
 
 ### **`estado_actividad` *(catálogo)***
 
@@ -206,15 +192,15 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 ### **`documentacion`**
 
-* `id` (PK), `paciente_user_id` (FK→usuarios.id), `url`, `created_at`
+* `id` (PK), `usuario_id` (FK→usuarios.id), `url`, `created_at`
 
 ---
 
 ## **Relaciones clave (resumen)**
 
-* Usuario ↔ Roles (N–N); perfiles `pacientes/medicos` 1–1.
+* Usuario → Rol (N–1 mediante `usuarios.role_id`).
 
-* Médico 1–N Diagnósticos; Paciente 1–N Diagnósticos.
+* Usuario (rol médico) 1–N Diagnósticos como autor; Usuario (rol paciente) 1–N Diagnósticos como destinatario.
 
 * Diagnóstico 1–N Planes de cuidado.
 

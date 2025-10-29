@@ -1,93 +1,175 @@
 body {
-    background-color: #f7f7f7;
+    background-color: #f7f9fc;
     color: #2e2e2e;
     font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .layout-navbar {
-    background-color: #d9d9d9;
-    border-bottom: 1px solid #c4c4c4;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e4e6ef;
     min-height: 64px;
 }
 
-.layout-navbar .navbar-toggler {
-    border-color: transparent;
+.layout-navbar .nav-link {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2e2e2e;
+    transition: color 0.2s ease;
 }
 
-.layout-navbar .navbar-toggler:focus {
-    outline: none;
-    box-shadow: none;
+.layout-navbar .nav-link:hover,
+.layout-navbar .nav-item.active .nav-link {
+    color: #1a73e8;
 }
 
-.layout-navbar-collapse {
-    width: 100%;
+.layout-navbar-brand {
+    letter-spacing: 0.08em;
+}
+
+.layout-navbar-toggle {
+    font-size: 1.1rem;
+    color: #4a4a4a;
+}
+
+.layout-navbar-toggle:hover,
+.layout-navbar-toggle:focus {
+    color: #1a73e8;
+    text-decoration: none;
 }
 
 .layout-nav-left,
 .layout-nav-right {
     display: flex;
-    flex-direction: column;
-    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
 }
 
-.layout-nav-left .nav-link,
+.layout-nav-right {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .layout-nav-right .nav-link {
-    font-family: Arial, sans-serif;
-    font-size: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.75rem;
+    gap: 0.35rem;
+    min-width: 78px;
+    text-align: center;
+}
+
+.layout-nav-right-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.layout-nav-right-label {
+    font-size: 0.8rem;
     font-weight: 600;
+    line-height: 1.1;
+}
+
+.layout-sidebar {
+    background: #f8f9fa;
+}
+
+.layout-sidebar-brand {
+    background: #ffffff;
+    border-bottom: 1px solid #e4e6ef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    text-align: center;
+}
+
+.layout-sidebar-brand .brand-text {
     color: #1f1f1f;
-    padding: 0.5rem 0;
+    font-weight: 700;
+    letter-spacing: 0.05em;
 }
 
-.layout-nav-left .nav-link:hover,
-.layout-nav-right .nav-link:hover,
-.layout-nav-left .nav-item.active .nav-link,
-.layout-nav-right .nav-item.active .nav-link {
-    color: #000000;
-    text-decoration: underline;
+.layout-sidebar-nav .nav-link {
+    color: #4a4a4a;
+    font-weight: 600;
+    border-radius: 0.4rem;
+    margin: 0.15rem 0;
+    padding: 0.7rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-content: flex-start;
+    text-align: left;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.layout-navbar-brand {
-    font-size: 1.25rem;
-    letter-spacing: 0.08em;
+.layout-sidebar-nav .nav-link .nav-icon {
+    font-size: 1rem;
+    color: #6c757d;
+    flex-shrink: 0;
+}
+
+.layout-sidebar-nav .nav-link:hover {
+    background-color: rgba(26, 115, 232, 0.1);
+    color: #1a73e8;
+}
+
+.layout-sidebar-nav .nav-link:hover .nav-icon {
+    color: #1a73e8;
+}
+
+.layout-sidebar-nav .nav-link.active {
+    background-color: #1a73e8;
+    color: #ffffff;
+}
+
+.layout-sidebar-nav .nav-link.active .nav-icon {
+    color: #ffffff;
 }
 
 .content-wrapper {
     background-color: transparent;
-    padding-top: 1.5rem;
-    min-height: calc(100vh - 160px);
+    padding: 1.5rem;
+    min-height: calc(100vh - 136px);
 }
 
 .main-footer {
-    background-color: #d9d9d9;
-    border-top: 1px solid #c4c4c4;
+    background-color: #ffffff;
+    border-top: 1px solid #e4e6ef;
 }
 
 .footer-copy {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #1f1f1f;
+    color: #4a4a4a;
 }
 
-@media (min-width: 992px) {
-    .layout-navbar-collapse {
-        display: flex !important;
-        flex-direction: row;
-        align-items: center;
+@media (max-width: 768px) {
+    .layout-navbar {
+        min-height: 56px;
     }
 
-    .layout-nav-left,
-    .layout-nav-right {
-        flex-direction: row;
-        width: auto;
-    }
-
-    .layout-nav-left .nav-link,
     .layout-nav-right .nav-link {
-        padding: 0.5rem 1rem;
+        padding: 0.5rem;
     }
 
+    .content-wrapper {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
     .layout-nav-right {
-        margin-left: auto;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+    }
+
+    .layout-nav-right .nav-link {
+        min-width: 0;
+        width: 100%;
     }
 }

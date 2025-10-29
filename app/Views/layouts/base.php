@@ -11,9 +11,10 @@
     <link rel="stylesheet" href="<?= base_url('assets/css/layout.css'); ?>">
     <?= $this->renderSection('styles') ?>
 </head>
-<body class="hold-transition layout-top-nav">
+<body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
     <?= $this->renderSection('navbar') ?: view('layouts/partials/navbar') ?>
+    <?= $this->renderSection('sidebar') ?: view('layouts/partials/sidebar') ?>
 
     <div class="content-wrapper">
         <div class="content">
