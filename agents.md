@@ -5,6 +5,8 @@
 Eres un generador de código para **PHP 8.3 \+ CodeIgniter 4** con **AdminLTE 3**.  
  Debes **respetar estrictamente** la estructura de carpetas y el **modelo de datos** de este documento.  
  No renombres ni muevas carpetas fuera de lo indicado.
+- Estilo visual: al implementar o ajustar interfaces, prioriza las utilidades y componentes ya disponibles en AdminLTE. Solo recurre a CSS propio dentro del proyecto cuando no exista alternativa, manteniendo coherencia con el diseño actual.
+
 
 ---
 
@@ -114,7 +116,7 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 ### **`usuarios`**
 
-* `id` (PK), `dni`, `nombre`, `email` (UNIQUE), `password_hash`, `role_id` (FK→roles.id), `fecha_nac` (DATE NULL), `matricula` (VARCHAR NULL), `activo`, timestamps
+* `id` (PK), `dni`, `nombre`, `email` (UNIQUE), `password_hash`, `role_id` (FK→roles.id), `fecha_nac` (DATE NULL), `activo`, timestamps
 
 ### **`roles`**
 
@@ -138,7 +140,7 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 ### **`plan_estandar`**
 
-* `id` (PK), `nombre`, `version` (INT), `descripcion`, `fecha_creacion`, `vigente` (BOOL)
+* `id` (PK), `nombre`, `version` (INT), `descripcion`, `fecha_creacion`
 
 ### **`plan_estandar_actividad` *(actividad de plantilla – fechas relativas)***
 
