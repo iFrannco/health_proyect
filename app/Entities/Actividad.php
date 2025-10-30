@@ -19,7 +19,7 @@ class Actividad extends Entity
     protected $casts   = [
         'id' => 'integer',
         'plan_id' => 'integer',
-        'estado_id' => 'integer',
+        'estado' => 'string',
         'validada' => 'boolean'
     ];
 
