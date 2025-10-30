@@ -39,7 +39,7 @@ class CreateRolesTable extends Migration
         ]);
 
         $this->forge->addKey('id', true);
-        $this->forge->createTable('roles', true);
+        $this->forge->createTable('roles', true, ['ENGINE' => 'InnoDB']);
     }
 
     public function down(): void
