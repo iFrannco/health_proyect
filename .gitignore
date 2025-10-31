@@ -4,3 +4,8 @@ writable/session/*
 
 # Environment-specific database configuration
 app/Config/Database.php
+writable/logs/log-2025-10-30.log
+writable/session/ci_session7937de016345201c45a2202ef922979b
+writable/session/ci_session4bf4a20ae78f820ab1f4a6131fc01fb3
+writable/session/ci_session86e85d8a704bcb5fa29d9f5fd27c11e2
+writable/session/ci_session518cfc6410b814ce49d5fa4ec3bcbf0f
