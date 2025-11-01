@@ -11,7 +11,6 @@ class Actividad extends Entity
         'created_at',
         'updated_at',
         'deleted_at',
-        'fecha_validacion',
         'fecha_creacion',
         'fecha_inicio',
         'fecha_fin'
@@ -19,12 +18,21 @@ class Actividad extends Entity
     protected $casts   = [
         'id' => 'integer',
         'plan_id' => 'integer',
-        'estado' => 'string',
-        'validada' => 'boolean'
+        'estado_id' => 'integer',
+        'validado' => '?boolean'
     ];
 
-    protected function setValidada(string $val): void
+    /**
+     * Normaliza el valor booleando de validado admitiendo null.
+     */
+    protected function setValidado($val): void
     {
-        $this->attributes['validada'] = filter_var($val, FILTER_VALIDATE_BOOLEAN);
+        if ($val === null || $val === '') {
+            $this->attributes['validado'] = null;
+
+            return;
+        }
+
+        $this->attributes['validado'] = filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
     }
 }

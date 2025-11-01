@@ -125,6 +125,7 @@ Las actividades creadas comienzan con **estado `sin_iniciar`** y el médico podr
 | ---------------- | -------------- | ------------------------------------------ |
 | `id`             | INT (PK)       | Identificador                              |
 | `diagnostico_id` | FK→Diagnostico | Diagnóstico asociado                       |
+| `plan_estandar_id` | FK→PlanEstandar | Plantilla origen (nullable)                 |
 | `nombre`         | VARCHAR(180)   | Título opcional definido por el médico     |
 | `descripcion`    | TEXT NULL      | Descripción clínica opcional               |
 | `fechaCreacion`  | DATETIME       | Asignada automáticamente                   |
@@ -145,4 +146,3 @@ Las actividades creadas comienzan con **estado `sin_iniciar`** y el médico podr
 | `descripcion`   | VARCHAR/TEXT        | Descripción                                         |
 | `estado_id`     | FK→estado_actividad | `sin_iniciar` al crear                              |
 | `validado`      | BOOLEAN NULL        | `NULL/false` al crear; true cuando el médico valida |
-

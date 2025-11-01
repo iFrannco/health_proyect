@@ -144,6 +144,8 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * `diagnostico_id` (FK→diagnosticos.id, **NOT NULL**)
 
+* `plan_estandar_id` (FK→planes_estandar.id, **NULLABLE**)
+
 * `nombre` (VARCHAR 180 NULL), `descripcion` (TEXT NULL)
 
 * `estado` (STRING NULL; progreso global del plan)
@@ -153,6 +155,28 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 * `created_at`, `updated_at`, `deleted_at`
 
 **Regla**: el usuario destinatario se obtiene transitivamente por `diagnostico → destinatario_user_id`.
+
+### **`planes_estandar` *(plantillas clínicas)***
+
+* `id` (PK)
+
+* `nombre` (VARCHAR 180), `descripcion` (TEXT NULL)
+
+* `version` (INT), `vigente` (BOOL)
+
+* `fecha_creacion`, `created_at`, `updated_at`, `deleted_at`
+
+### **`plan_estandar_actividades` *(definición de la plantilla)***
+
+* `id` (PK)
+
+* `plan_estandar_id` (FK→planes_estandar.id)
+
+* `nombre`, `descripcion`
+
+* `offset_inicio_dias`, `offset_fin_dias`, `orden`
+
+* `created_at`, `updated_at`, `deleted_at`
 
 ### **`estado_actividad` *(catálogo)***
 
@@ -192,10 +216,11 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * Diagnóstico 1–N Planes de cuidado.
 
-* **Plan de cuidado** 1–N **Actividades (instancias)**.
+* Plan de cuidado N–1 Plan estandar (nullable).
+* Plan de cuidado 1–N Actividades (instancias).
 
   * Para planes personalizados (MED-PLAN-001) las actividades se cargan manualmente con `estado_id = sin_iniciar` y `validado = NULL`.
-  * Si se aplican plantillas estandarizadas, la **Library `CarePlanTemplate`** deberá materializar cada regla en filas de `actividades`, copiando nombre/descripcion y asignando fechas relativas.
+  * Si se aplican plantillas estandarizadas, la **Library `CarePlanTemplate`** debía materializar cada regla en filas de `actividades`, copiando nombre/descripcion y asignando fechas relativas y vinculando el plan a `plan_estandar_id`.
 
 ---
 
