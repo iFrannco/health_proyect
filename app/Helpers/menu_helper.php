@@ -52,7 +52,6 @@ function buildLayoutData(string $rol): array
     // Menú superior (común)
     $userItems = [
         ['label' => 'Mi Perfil', 'url' => $perfilUrl, 'icon' => 'fas fa-user-circle'],
-        ['label' => 'Seleccionar rol', 'url' => site_url('auth/select-role'), 'icon' => 'fas fa-user-tag'],
         ['label' => 'Cerrar sesión', 'url' => site_url('auth/logout'), 'icon' => 'fas fa-sign-out-alt'],
     ];
 
