@@ -138,37 +138,25 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * `descripcion`, `fecha_creacion`
 
-### **`plan_estandar`**
-
-* `id` (PK), `nombre`, `version` (INT), `descripcion`, `fecha_creacion`
-
-### **`plan_estandar_actividad` *(actividad de plantilla – fechas relativas)***
-
-* `id` (PK), `plan_estandar_id` (FK→plan\_estandar.id)
-
-* `Descripcion, nombre`
-
-* `offset_inicio_dias` (INT), `offset_fin_dias` (INT)
-
-* `orden` (INT)
-
 ### **`planes_cuidado` *(instancia para un diagnóstico)***
 
 * `id` (PK)
 
 * `diagnostico_id` (FK→diagnosticos.id, **NOT NULL**)
 
-* `plan_estandar_id` (FK→plan\_estandar.id, **NULLABLE**; setear si proviene de una plantilla)
+* `nombre` (VARCHAR 180 NULL), `descripcion` (TEXT NULL)
 
-* `estado` (STRING; progreso global del plan)
+* `estado` (STRING NULL; progreso global del plan)
 
 * `fecha_creacion`, `fecha_inicio`, `fecha_fin`
+
+* `created_at`, `updated_at`, `deleted_at`
 
 **Regla**: el usuario destinatario se obtiene transitivamente por `diagnostico → destinatario_user_id`.
 
 ### **`estado_actividad` *(catálogo)***
 
-* `id` (PK), `nombre` (UNIQUE: `sin_iniciar`, `iniciada`, `terminada`), `orden` (INT)
+* `id` (PK), `nombre` (UNIQUE: `sin iniciar`, `iniciada`, `terminada`), `slug` (UNIQUE), `orden` (INT)
 
 * **Seed obligatorio** con los 3 estados.
 
@@ -178,17 +166,17 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * `estado_id` (FK→estado\_actividad.id) — **estado actual**
 
-* `validada` (BOOL DEFAULT FALSE), `fecha_validacion` (DATETIME NULL)
+* `validado` (BOOL NULL DEFAULT FALSE)
 
 * `Descripcion, nombre`
 
 * `fecha_creacion`, `fecha_inicio`, `fecha_fin`
 
+* `created_at`, `updated_at`, `deleted_at`
+
 **Reglas**:
 
-* `validada = TRUE` **solo** si `estado_id` \= `terminada`.
-
-* Cambios en una plantilla **no** alteran actividades ya materializadas (copiar `descripcion, nombre`  al crear).
+* `validado = TRUE` **solo** si `estado_id` \= `terminada`.
 
 ### **`documentacion`**
 
@@ -204,31 +192,10 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * Diagnóstico 1–N Planes de cuidado.
 
-* **Plan de cuidado** N–1 **Plan estandar** (nullable) y 1–N **Actividades (instancias)**.
+* **Plan de cuidado** 1–N **Actividades (instancias)**.
 
-* Actividad 1–1 Estado actual (FK a catálogo) \+ validación (bool \+ fecha).
-
----
-
-## **Comportamiento de plantillas**
-
-* `plan_estandar` \+ `plan_estandar_actividad` definen **reglas relativas** (offsets).
-
-* Al asignar un plan estandarizado:
-
-  * se crea `planes_cuidado` (con `plan_estandar_id` y `fecha_inicio` concreta),
-
-  * la **Library `CarePlanTemplate`** materializa cada `plan_estandar_actividad` en filas de `actividades`:
-
-    * `fecha_inicio = plan.fecha_inicio + offset_inicio_dias`
-
-    * `fecha_fin = plan.fecha_inicio + offset_fin_dias`
-
-    * `estado_id = (sin_iniciar)` por defecto
-
-    * `validada = false`, `fecha_validacion = NULL`
-
-    * Copiar `descripcion` (snapshot)
+  * Para planes personalizados (MED-PLAN-001) las actividades se cargan manualmente con `estado_id = sin_iniciar` y `validado = NULL`.
+  * Si se aplican plantillas estandarizadas, la **Library `CarePlanTemplate`** deberá materializar cada regla en filas de `actividades`, copiando nombre/descripcion y asignando fechas relativas.
 
 ---
 
@@ -517,5 +484,3 @@ Al seguir esta directiva, el proyecto mantendrá:
 - Mayor trazabilidad en la evolución funcional del sistema.
 
 ---
-
-

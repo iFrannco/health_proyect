@@ -125,6 +125,8 @@ Las actividades creadas comienzan con **estado `sin_iniciar`** y el médico podr
 | ---------------- | -------------- | ------------------------------------------ |
 | `id`             | INT (PK)       | Identificador                              |
 | `diagnostico_id` | FK→Diagnostico | Diagnóstico asociado                       |
+| `nombre`         | VARCHAR(180)   | Título opcional definido por el médico     |
+| `descripcion`    | TEXT NULL      | Descripción clínica opcional               |
 | `fechaCreacion`  | DATETIME       | Asignada automáticamente                   |
 | `fechaInicio`    | DATE           | Inicio del plan                            |
 | `fechaFin`       | DATE           | Fin del plan                               |
@@ -143,5 +145,4 @@ Las actividades creadas comienzan con **estado `sin_iniciar`** y el médico podr
 | `descripcion`   | VARCHAR/TEXT        | Descripción                                         |
 | `estado_id`     | FK→estado_actividad | `sin_iniciar` al crear                              |
 | `validado`      | BOOLEAN NULL        | `NULL/false` al crear; true cuando el médico valida |
-
 
