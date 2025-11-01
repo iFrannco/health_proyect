@@ -1,8 +1,8 @@
-<?= $this->extend('medico/layout') ?>
+<?= $this->extend('layouts/base') ?>
 
 <?= $this->section('content') ?>
-<div class="row">
-    <div class="col-12 col-lg-10">
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8 col-xl-7 mx-auto">
         <h1 class="mb-4">Nuevo diagnostico</h1>
 
         <?= view('layouts/partials/alerts') ?>
@@ -90,11 +90,14 @@
                         <?php endif; ?>
                     </div>
                 </div>
-                <div class="card-footer d-flex justify-content-between">
-                    <a href="<?= route_to('medico_diagnosticos_index') ?>" class="btn btn-outline-secondary">
+                <div class="card-footer d-flex flex-column flex-sm-row justify-content-end align-items-stretch align-items-sm-center">
+                    <a
+                        href="<?= route_to('medico_diagnosticos_index') ?>"
+                        class="btn btn-outline-secondary w-100 w-sm-auto mb-2 mb-sm-0 me-sm-3 mr-sm-3"
+                    >
                         Cancelar
                     </a>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary w-100 w-sm-auto ms-sm-2 ml-sm-2">
                         Guardar diagnostico
                     </button>
                 </div>
@@ -103,4 +106,3 @@
     </div>
 </div>
 <?= $this->endSection() ?>
-

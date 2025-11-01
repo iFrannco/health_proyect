@@ -18,7 +18,6 @@ class Diagnosticos extends BaseController
 
     public function __construct()
     {
-        helper(['form', 'url']);
         $this->diagnosticoModel    = new DiagnosticoModel();
         $this->userModel           = new UserModel();
         $this->tipoDiagnosticoModel = new TipoDiagnosticoModel();
@@ -35,7 +34,7 @@ class Diagnosticos extends BaseController
             'diagnosticos'  => $diagnosticos,
         ];
 
-        return view('medico/diagnosticos/index', $data);
+        return view('medico/diagnosticos/index', $this->layoutData() + $data);
     }
 
     public function create()
@@ -52,7 +51,7 @@ class Diagnosticos extends BaseController
             'errors'    => session()->getFlashdata('errors') ?? [],
         ];
 
-        return view('medico/diagnosticos/create', $data);
+        return view('medico/diagnosticos/create', $this->layoutData() + $data);
     }
 
     public function store()
