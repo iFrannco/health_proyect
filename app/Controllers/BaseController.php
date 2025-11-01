@@ -8,6 +8,7 @@ use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use CodeIgniter\Exceptions\PageNotFoundException;
 
 /**
  * Class BaseController
@@ -35,7 +36,7 @@ abstract class BaseController extends Controller
      *
      * @var list<string>
      */
-    protected $helpers = [];
+    protected $helpers = ['menu'];
 
     /**
      * Be sure to declare properties for any property fetch you initialized.
@@ -54,5 +55,25 @@ abstract class BaseController extends Controller
         // Preload any models, libraries, etc, here.
 
         // E.g.: $this->session = service('session');
+    }
+
+    /**
+     * Devuelve los datos de layout para la vista (marca, menús, etc.)
+     * Asume que el usuario ya está autenticado y tiene un rol válido.
+     */
+    protected function layoutData(): array
+    {
+        session()->set('rol', 'medico');
+        // Verificación defensiva: si no hay rol, se lanza excepción
+        if (! session()->has('rol')) {
+            throw new PageNotFoundException('Acceso no autorizado.');
+        }
+
+        // Rol único del usuario (admin, medico o paciente)
+        $rol = session('rol');
+
+
+        // Construye y devuelve los datos del layout
+        return buildLayoutData($rol);
     }
 }
