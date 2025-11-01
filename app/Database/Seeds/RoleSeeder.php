@@ -8,26 +8,40 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        $builder = $this->db->table('roles');
+        $roles = [
+            [
+                'id'     => 1,
+                'nombre' => 'Medico',
+                'slug'   => 'medico',
+            ],
+            [
+                'id'     => 2,
+                'nombre' => 'Paciente',
+                'slug'   => 'paciente',
+            ],
+        ];
 
         $now = date('Y-m-d H:i:s');
 
-        $builder->insertBatch([
-            [
-                'id'         => 1,
-                'nombre'     => 'Medico',
-                'slug'       => 'medico',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'id'         => 2,
-                'nombre'     => 'Paciente',
-                'slug'       => 'paciente',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
+        foreach ($roles as $rol) {
+            $builder  = $this->db->table('roles');
+            $existing = $builder->where('id', $rol['id'])->get()->getFirstRow();
+
+            if ($existing !== null) {
+                $this->db->table('roles')->where('id', $rol['id'])->update([
+                    'nombre'     => $rol['nombre'],
+                    'slug'       => $rol['slug'],
+                    'updated_at' => $now,
+                ]);
+            } else {
+                $this->db->table('roles')->insert([
+                    'id'         => $rol['id'],
+                    'nombre'     => $rol['nombre'],
+                    'slug'       => $rol['slug'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        }
     }
 }
-

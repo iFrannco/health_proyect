@@ -10,7 +10,7 @@ class InitialSeeder extends Seeder
     {
         $this->call('RoleSeeder');
         $this->call('TipoDiagnosticoSeeder');
+        $this->call('EstadoActividadSeeder');
         $this->call('UserSeeder');
     }
 }
-
