@@ -1,0 +1,116 @@
+ERROR - 2025-10-30 19:31:49 --> Error connecting to the database: mysqli_sql_exception: Access denied for user 'root'@'localhost' (using password: YES) in C:\wamp64\www\health_proyect\system\Database\MySQLi\Connection.php:201
+Stack trace:
+#0 C:\wamp64\www\health_proyect\system\Database\MySQLi\Connection.php(201): mysqli->real_connect('localhost', 'root', Object(SensitiveParameterValue), 'health_proyect', 3306, '', 0)
+#1 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(419): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#2 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(614): CodeIgniter\Database\BaseConnection->initialize()
+#3 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(1525): CodeIgniter\Database\BaseConnection->query('SHOW TABLES FRO...')
+#4 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(1545): CodeIgniter\Database\BaseConnection->listTables()
+#5 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(768): CodeIgniter\Database\BaseConnection->tableExists('migrations')
+#6 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(162): CodeIgniter\Database\MigrationRunner->ensureTable()
+#7 C:\wamp64\www\health_proyect\system\Commands\Database\Migrate.php(85): CodeIgniter\Database\MigrationRunner->latest(NULL)
+#8 C:\wamp64\www\health_proyect\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Migrate->run(Array)
+#9 C:\wamp64\www\health_proyect\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate', Array)
+#10 C:\wamp64\www\health_proyect\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#11 C:\wamp64\www\health_proyect\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#12 C:\wamp64\www\health_proyect\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#13 {main}
+
+Next CodeIgniter\Database\Exceptions\DatabaseException: Access denied for user '****'@'localhost' (using password: YES) in C:\wamp64\www\health_proyect\system\Database\MySQLi\Connection.php:246
+Stack trace:
+#0 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(419): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#1 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(614): CodeIgniter\Database\BaseConnection->initialize()
+#2 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(1525): CodeIgniter\Database\BaseConnection->query('SHOW TABLES FRO...')
+#3 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(1545): CodeIgniter\Database\BaseConnection->listTables()
+#4 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(768): CodeIgniter\Database\BaseConnection->tableExists('migrations')
+#5 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(162): CodeIgniter\Database\MigrationRunner->ensureTable()
+#6 C:\wamp64\www\health_proyect\system\Commands\Database\Migrate.php(85): CodeIgniter\Database\MigrationRunner->latest(NULL)
+#7 C:\wamp64\www\health_proyect\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Migrate->run(Array)
+#8 C:\wamp64\www\health_proyect\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate', Array)
+#9 C:\wamp64\www\health_proyect\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#10 C:\wamp64\www\health_proyect\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#11 C:\wamp64\www\health_proyect\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#12 {main}
+ERROR - 2025-10-30 19:33:01 --> Error connecting to the database: mysqli_sql_exception: Unknown database 'health_proyect' in C:\wamp64\www\health_proyect\system\Database\MySQLi\Connection.php:201
+Stack trace:
+#0 C:\wamp64\www\health_proyect\system\Database\MySQLi\Connection.php(201): mysqli->real_connect('localhost', 'root', Object(SensitiveParameterValue), 'health_proyect', 3306, '', 0)
+#1 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(419): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#2 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(614): CodeIgniter\Database\BaseConnection->initialize()
+#3 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(1525): CodeIgniter\Database\BaseConnection->query('SHOW TABLES FRO...')
+#4 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(1545): CodeIgniter\Database\BaseConnection->listTables()
+#5 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(768): CodeIgniter\Database\BaseConnection->tableExists('migrations')
+#6 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(162): CodeIgniter\Database\MigrationRunner->ensureTable()
+#7 C:\wamp64\www\health_proyect\system\Commands\Database\Migrate.php(85): CodeIgniter\Database\MigrationRunner->latest(NULL)
+#8 C:\wamp64\www\health_proyect\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Migrate->run(Array)
+#9 C:\wamp64\www\health_proyect\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate', Array)
+#10 C:\wamp64\www\health_proyect\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#11 C:\wamp64\www\health_proyect\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#12 C:\wamp64\www\health_proyect\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#13 {main}
+
+Next CodeIgniter\Database\Exceptions\DatabaseException: Unknown database 'health_proyect' in C:\wamp64\www\health_proyect\system\Database\MySQLi\Connection.php:246
+Stack trace:
+#0 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(419): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#1 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(614): CodeIgniter\Database\BaseConnection->initialize()
+#2 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(1525): CodeIgniter\Database\BaseConnection->query('SHOW TABLES FRO...')
+#3 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(1545): CodeIgniter\Database\BaseConnection->listTables()
+#4 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(768): CodeIgniter\Database\BaseConnection->tableExists('migrations')
+#5 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(162): CodeIgniter\Database\MigrationRunner->ensureTable()
+#6 C:\wamp64\www\health_proyect\system\Commands\Database\Migrate.php(85): CodeIgniter\Database\MigrationRunner->latest(NULL)
+#7 C:\wamp64\www\health_proyect\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Migrate->run(Array)
+#8 C:\wamp64\www\health_proyect\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate', Array)
+#9 C:\wamp64\www\health_proyect\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#10 C:\wamp64\www\health_proyect\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#11 C:\wamp64\www\health_proyect\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#12 {main}
+ERROR - 2025-10-30 19:34:16 --> mysqli_sql_exception: Failed to open the referenced table 'roles' in C:\wamp64\www\health_proyect\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\wamp64\www\health_proyect\system\Database\MySQLi\Connection.php(327): mysqli->query('CREATE TABLE `u...', 0)
+#1 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('CREATE TABLE `u...')
+#2 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('CREATE TABLE `u...')
+#3 C:\wamp64\www\health_proyect\system\Database\Forge.php(570): CodeIgniter\Database\BaseConnection->query('CREATE TABLE `u...')
+#4 C:\wamp64\www\health_proyect\app\Database\Migrations\2024-10-22-000002_CreateUsersTable.php(70): CodeIgniter\Database\Forge->createTable('users', true, Array)
+#5 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(876): App\Database\Migrations\CreateUsersTable->up()
+#6 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(182): CodeIgniter\Database\MigrationRunner->migrate('up', Object(stdClass))
+#7 C:\wamp64\www\health_proyect\system\Commands\Database\Migrate.php(85): CodeIgniter\Database\MigrationRunner->latest(NULL)
+#8 C:\wamp64\www\health_proyect\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Migrate->run(Array)
+#9 C:\wamp64\www\health_proyect\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate', Array)
+#10 C:\wamp64\www\health_proyect\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#11 C:\wamp64\www\health_proyect\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#12 C:\wamp64\www\health_proyect\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#13 {main}
+ERROR - 2025-10-30 19:59:06 --> mysqli_sql_exception: Failed to open the referenced table 'roles' in C:\wamp64\www\health_proyect\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\wamp64\www\health_proyect\system\Database\MySQLi\Connection.php(327): mysqli->query('CREATE TABLE `u...', 0)
+#1 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('CREATE TABLE `u...')
+#2 C:\wamp64\www\health_proyect\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('CREATE TABLE `u...')
+#3 C:\wamp64\www\health_proyect\system\Database\Forge.php(570): CodeIgniter\Database\BaseConnection->query('CREATE TABLE `u...')
+#4 C:\wamp64\www\health_proyect\app\Database\Migrations\2024-10-22-000002_CreateUsersTable.php(70): CodeIgniter\Database\Forge->createTable('users', true, Array)
+#5 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(876): App\Database\Migrations\CreateUsersTable->up()
+#6 C:\wamp64\www\health_proyect\system\Database\MigrationRunner.php(182): CodeIgniter\Database\MigrationRunner->migrate('up', Object(stdClass))
+#7 C:\wamp64\www\health_proyect\system\Commands\Database\Migrate.php(85): CodeIgniter\Database\MigrationRunner->latest(NULL)
+#8 C:\wamp64\www\health_proyect\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Migrate->run(Array)
+#9 C:\wamp64\www\health_proyect\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate', Array)
+#10 C:\wamp64\www\health_proyect\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#11 C:\wamp64\www\health_proyect\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#12 C:\wamp64\www\health_proyect\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#13 {main}
+CRITICAL - 2025-10-30 20:01:48 --> TypeError: CodeIgniter\CLI\InputOutput::input(): Return value must be of type string, false returned
+[Method: CLI, Route: migrate:rollback]
+in SYSTEMPATH\CLI\InputOutput.php on line 46.
+ 1 SYSTEMPATH\CLI\CLI.php(260): CodeIgniter\CLI\InputOutput->input()
+ 2 SYSTEMPATH\Commands\Database\MigrateRollback.php(76): CodeIgniter\CLI\CLI::prompt('Are you sure you want to rollback?', [...])
+ 3 SYSTEMPATH\CLI\Commands.php(74): CodeIgniter\Commands\Database\MigrateRollback->run([])
+ 4 SYSTEMPATH\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate:rollback', [])
+ 5 SYSTEMPATH\Boot.php(388): CodeIgniter\CLI\Console->run()
+ 6 SYSTEMPATH\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+ 7 ROOTPATH\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+CRITICAL - 2025-10-30 20:02:17 --> TypeError: CodeIgniter\CLI\InputOutput::input(): Return value must be of type string, false returned
+[Method: CLI, Route: migrate:rollback]
+in SYSTEMPATH\CLI\InputOutput.php on line 46.
+ 1 SYSTEMPATH\CLI\CLI.php(260): CodeIgniter\CLI\InputOutput->input()
+ 2 SYSTEMPATH\Commands\Database\MigrateRollback.php(76): CodeIgniter\CLI\CLI::prompt('Are you sure you want to rollback?', [...])
+ 3 SYSTEMPATH\CLI\Commands.php(74): CodeIgniter\Commands\Database\MigrateRollback->run([...])
+ 4 SYSTEMPATH\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate:rollback', [...])
+ 5 SYSTEMPATH\Boot.php(388): CodeIgniter\CLI\Console->run()
+ 6 SYSTEMPATH\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+ 7 ROOTPATH\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
