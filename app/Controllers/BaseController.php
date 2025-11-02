@@ -63,14 +63,23 @@ abstract class BaseController extends Controller
      */
     protected function layoutData(): array
     {
-        session()->set('rol', 'medico');
+        $session = session();
+
+        if (! $session->has('rol')) {
+            $session->set('rol', 'medico');
+        }
+
         // Verificación defensiva: si no hay rol, se lanza excepción
-        if (! session()->has('rol')) {
+        if (! $session->has('rol')) {
             throw new PageNotFoundException('Acceso no autorizado.');
         }
 
         // Rol único del usuario (admin, medico o paciente)
-        $rol = session('rol');
+        $rol = $session->get('rol');
+
+        if (! is_string($rol) || $rol === '') {
+            throw new PageNotFoundException('Acceso no autorizado.');
+        }
 
 
         // Construye y devuelve los datos del layout

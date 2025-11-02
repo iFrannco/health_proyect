@@ -180,4 +180,3 @@ class Planes extends BaseController
         return $paciente;
     }
 }
-

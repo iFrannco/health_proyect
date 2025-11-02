@@ -36,6 +36,7 @@ function buildLayoutData(string $rol): array
         case 'paciente':
             $brandUrl = site_url('paciente/home');
             $navItems = [
+                ['label' => 'Dashboard', 'url' => site_url('paciente/home'), 'icon' => 'fas fa-home'],
                 ['label' => 'Historial Médico', 'url' => site_url('paciente/historial'), 'icon' => 'fas fa-file-medical'],
                 ['label' => 'Planes de cuidado', 'url' => site_url('paciente/planes'), 'icon' => 'fas fa-heartbeat'],
             ];
