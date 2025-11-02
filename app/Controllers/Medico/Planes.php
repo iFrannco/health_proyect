@@ -9,9 +9,9 @@ use App\Models\DiagnosticoModel;
 use App\Models\EstadoActividadModel;
 use App\Models\PlanCuidadoModel;
 use App\Models\UserModel;
+use App\Exceptions\PageForbiddenException;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 use CodeIgniter\Database\Exceptions\DataException;
-use CodeIgniter\Exceptions\PageForbiddenException;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
 class Planes extends BaseController

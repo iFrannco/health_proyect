@@ -7,7 +7,7 @@ use App\Entities\User;
 use App\Models\DiagnosticoModel;
 use App\Models\TipoDiagnosticoModel;
 use App\Models\UserModel;
-use CodeIgniter\Exceptions\PageForbiddenException;
+use App\Exceptions\PageForbiddenException;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
 class Diagnosticos extends BaseController
