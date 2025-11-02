@@ -12,6 +12,15 @@
     <?= $this->renderSection('styles') ?>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
+<script>
+(function () {
+    try {
+        if (localStorage.getItem('layout.sidebar.collapsed') === 'true') {
+            document.body.classList.add('sidebar-collapse');
+        }
+    } catch (error) {}
+})();
+</script>
 <div class="wrapper">
     <?= $this->renderSection('navbar') ?: view('layouts/partials/navbar') ?>
     <?= $this->renderSection('sidebar') ?: view('layouts/partials/sidebar') ?>
@@ -30,6 +39,7 @@
 <script src="<?= base_url('adminlte/plugins/jquery/jquery.min.js'); ?>"></script>
 <script src="<?= base_url('adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js'); ?>"></script>
 <script src="<?= base_url('adminlte/dist/js/adminlte.min.js'); ?>"></script>
+<script src="<?= base_url('assets/js/layout.js'); ?>"></script>
 <?= $this->renderSection('scripts') ?>
 </body>
 </html>

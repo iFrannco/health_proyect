@@ -11,20 +11,42 @@ class Actividad extends Entity
         'created_at',
         'updated_at',
         'deleted_at',
-        'fecha_validacion',
         'fecha_creacion',
         'fecha_inicio',
-        'fecha_fin'
+        'fecha_fin',
+        'paciente_completada_en',
+        'fecha_validacion',
     ];
     protected $casts   = [
         'id' => 'integer',
         'plan_id' => 'integer',
-        'estado' => 'string',
-        'validada' => 'boolean'
+        'estado_id' => 'integer',
+        'validado' => '?boolean',
     ];
 
-    protected function setValidada(string $val): void
+    /**
+     * Normaliza el valor booleando de validado admitiendo null.
+     */
+    protected function setValidado($val): void
     {
-        $this->attributes['validada'] = filter_var($val, FILTER_VALIDATE_BOOLEAN);
+        if ($val === null || $val === '') {
+            $this->attributes['validado'] = null;
+
+            return;
+        }
+
+        $this->attributes['validado'] = filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    }
+
+    /**
+     * Lleva el comentario del paciente a null cuando queda vacío.
+     *
+     * @param mixed $comentario
+     */
+    protected function setPacienteComentario($comentario): void
+    {
+        $texto = trim((string) $comentario);
+
+        $this->attributes['paciente_comentario'] = $texto === '' ? null : $texto;
     }
 }

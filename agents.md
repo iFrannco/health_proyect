@@ -5,6 +5,8 @@
 Eres un generador de código para **PHP 8.3 \+ CodeIgniter 4** con **AdminLTE 3**.  
  Debes **respetar estrictamente** la estructura de carpetas y el **modelo de datos** de este documento.  
  No renombres ni muevas carpetas fuera de lo indicado.
+- Estilo visual: al implementar o ajustar interfaces, prioriza las utilidades y componentes ya disponibles en AdminLTE. Solo recurre a CSS propio dentro del proyecto cuando no exista alternativa, manteniendo coherencia con el diseño actual.
+
 
 ---
 
@@ -114,7 +116,7 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 ### **`usuarios`**
 
-* `id` (PK), `dni`, `nombre`, `email` (UNIQUE), `password_hash`, `role_id` (FK→roles.id), `fecha_nac` (DATE NULL), `matricula` (VARCHAR NULL), `activo`, timestamps
+* `id` (PK), `dni`, `nombre`, `email` (UNIQUE), `password_hash`, `role_id` (FK→roles.id), `fecha_nac` (DATE NULL), `activo`, timestamps
 
 ### **`roles`**
 
@@ -136,37 +138,52 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * `descripcion`, `fecha_creacion`
 
-### **`plan_estandar`**
-
-* `id` (PK), `nombre`, `version` (INT), `descripcion`, `fecha_creacion`, `vigente` (BOOL)
-
-### **`plan_estandar_actividad` *(actividad de plantilla – fechas relativas)***
-
-* `id` (PK), `plan_estandar_id` (FK→plan\_estandar.id)
-
-* `Descripcion, nombre`
-
-* `offset_inicio_dias` (INT), `offset_fin_dias` (INT)
-
-* `orden` (INT)
-
 ### **`planes_cuidado` *(instancia para un diagnóstico)***
 
 * `id` (PK)
 
 * `diagnostico_id` (FK→diagnosticos.id, **NOT NULL**)
 
-* `plan_estandar_id` (FK→plan\_estandar.id, **NULLABLE**; setear si proviene de una plantilla)
+* `creador_user_id` (FK→users.id, **NOT NULL**)
 
-* `estado` (STRING; progreso global del plan)
+* `plan_estandar_id` (FK→planes_estandar.id, **NULLABLE**)
+
+* `nombre` (VARCHAR 180 NULL), `descripcion` (TEXT NULL)
+
+* `estado` (STRING NULL; progreso global del plan)
 
 * `fecha_creacion`, `fecha_inicio`, `fecha_fin`
 
+* `created_at`, `updated_at`, `deleted_at`
+
 **Regla**: el usuario destinatario se obtiene transitivamente por `diagnostico → destinatario_user_id`.
+Los médicos únicamente pueden listar, editar o eliminar los planes que ellos mismos crearon.
+
+### **`planes_estandar` *(plantillas clínicas)***
+
+* `id` (PK)
+
+* `nombre` (VARCHAR 180), `descripcion` (TEXT NULL)
+
+* `version` (INT), `vigente` (BOOL)
+
+* `fecha_creacion`, `created_at`, `updated_at`, `deleted_at`
+
+### **`plan_estandar_actividades` *(definición de la plantilla)***
+
+* `id` (PK)
+
+* `plan_estandar_id` (FK→planes_estandar.id)
+
+* `nombre`, `descripcion`
+
+* `offset_inicio_dias`, `offset_fin_dias`, `orden`
+
+* `created_at`, `updated_at`, `deleted_at`
 
 ### **`estado_actividad` *(catálogo)***
 
-* `id` (PK), `nombre` (UNIQUE: `sin_iniciar`, `iniciada`, `terminada`), `orden` (INT)
+* `id` (PK), `nombre` (UNIQUE: `pendiente`, `completada`, `vencida`), `slug` (UNIQUE), `orden` (INT)
 
 * **Seed obligatorio** con los 3 estados.
 
@@ -176,17 +193,17 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * `estado_id` (FK→estado\_actividad.id) — **estado actual**
 
-* `validada` (BOOL DEFAULT FALSE), `fecha_validacion` (DATETIME NULL)
+* `validado` (BOOL NULL DEFAULT FALSE)
 
 * `Descripcion, nombre`
 
 * `fecha_creacion`, `fecha_inicio`, `fecha_fin`
 
+* `created_at`, `updated_at`, `deleted_at`
+
 **Reglas**:
 
-* `validada = TRUE` **solo** si `estado_id` \= `terminada`.
-
-* Cambios en una plantilla **no** alteran actividades ya materializadas (copiar `descripcion, nombre`  al crear).
+* `validado = TRUE` **solo** si `estado_id` \= `completada`.
 
 ### **`documentacion`**
 
@@ -202,31 +219,11 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * Diagnóstico 1–N Planes de cuidado.
 
-* **Plan de cuidado** N–1 **Plan estandar** (nullable) y 1–N **Actividades (instancias)**.
+* Plan de cuidado N–1 Plan estandar (nullable).
+* Plan de cuidado 1–N Actividades (instancias).
 
-* Actividad 1–1 Estado actual (FK a catálogo) \+ validación (bool \+ fecha).
-
----
-
-## **Comportamiento de plantillas**
-
-* `plan_estandar` \+ `plan_estandar_actividad` definen **reglas relativas** (offsets).
-
-* Al asignar un plan estandarizado:
-
-  * se crea `planes_cuidado` (con `plan_estandar_id` y `fecha_inicio` concreta),
-
-  * la **Library `CarePlanTemplate`** materializa cada `plan_estandar_actividad` en filas de `actividades`:
-
-    * `fecha_inicio = plan.fecha_inicio + offset_inicio_dias`
-
-    * `fecha_fin = plan.fecha_inicio + offset_fin_dias`
-
-    * `estado_id = (sin_iniciar)` por defecto
-
-    * `validada = false`, `fecha_validacion = NULL`
-
-    * Copiar `descripcion` (snapshot)
+  * Para planes personalizados (MED-PLAN-001) las actividades se cargan manualmente con `estado_id = pendiente` y `validado = NULL`.
+  * Si se aplican plantillas estandarizadas, la **Library `CarePlanTemplate`** debía materializar cada regla en filas de `actividades`, copiando nombre/descripcion y asignando fechas relativas y vinculando el plan a `plan_estandar_id`.
 
 ---
 
@@ -237,6 +234,8 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 * **Un** layout base.
 
 * **Sin** lógica de negocio en vistas/controladores: usar Models/Entities/Libraries.  
+
+* **Prohibido** crear, modificar o eliminar archivos de pruebas (`tests/`), ni incorporar nuevos casos de testing automatizado.
 
 * **Nomenclatura**:
 
@@ -515,5 +514,3 @@ Al seguir esta directiva, el proyecto mantendrá:
 - Mayor trazabilidad en la evolución funcional del sistema.
 
 ---
-
-
