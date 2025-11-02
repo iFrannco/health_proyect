@@ -148,6 +148,7 @@ class PacientePlanService
                 'a.validado',
                 'a.paciente_comentario',
                 'a.paciente_completada_en',
+                'a.fecha_validacion',
                 'estado_actividad.slug AS estado_slug',
                 'estado_actividad.nombre AS estado_nombre',
             ])
@@ -193,6 +194,7 @@ class PacientePlanService
             ->update([
                 'estado_id'              => $this->estadoIds[self::ESTADO_COMPLETADA],
                 'validado'               => null,
+                'fecha_validacion'       => null,
                 'paciente_comentario'    => $comentario,
                 'paciente_completada_en' => $this->ahora(),
             ]);
@@ -229,6 +231,7 @@ class PacientePlanService
             ->update([
                 'estado_id'              => $this->estadoIds[self::ESTADO_PENDIENTE],
                 'validado'               => null,
+                'fecha_validacion'       => null,
                 'paciente_comentario'    => null,
                 'paciente_completada_en' => null,
             ]);
@@ -390,6 +393,7 @@ class PacientePlanService
             'estado_slug'            => $estadoSlug,
             'estado_nombre'          => $actividad['estado_nombre'] ?? null,
             'validado'               => $this->toBool($actividad['validado'] ?? null),
+            'fecha_validacion'       => $actividad['fecha_validacion'] ?? null,
             'paciente_comentario'    => $actividad['paciente_comentario'] ?? null,
             'paciente_completada_en' => $actividad['paciente_completada_en'] ?? null,
             'puede_marcar'           => $puedeMarcar,
@@ -704,6 +708,7 @@ class PacientePlanService
                 'a.validado',
                 'a.paciente_comentario',
                 'a.paciente_completada_en',
+                'a.fecha_validacion',
                 'estado_actividad.slug AS estado_slug',
                 'estado_actividad.nombre AS estado_nombre',
             ])

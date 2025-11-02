@@ -15,6 +15,7 @@ class Actividad extends Entity
         'fecha_inicio',
         'fecha_fin',
         'paciente_completada_en',
+        'fecha_validacion',
     ];
     protected $casts   = [
         'id' => 'integer',

@@ -1,5 +1,48 @@
 <?= $this->extend('layouts/base') ?>
 
+<?= $this->section('styles') ?>
+<style>
+    .tabla-validado-col {
+        min-width: 240px;
+        width: 240px;
+    }
+
+    .tabla-validado-col .validado-detalle {
+        display: block;
+        margin-top: .25rem;
+        font-size: .85rem;
+        color: #6c757d;
+        min-height: 1.6rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tabla-validado-col .validado-detalle--placeholder {
+        visibility: hidden;
+    }
+
+    .tabla-accion-col {
+        width: 150px;
+        min-width: 150px;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .tabla-accion-col .btn {
+        min-width: 120px;
+        width: 120px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #tabla-actividades-medico tbody tr td {
+        vertical-align: middle;
+    }
+</style>
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <?php
 $plan           = $plan ?? [];
@@ -55,7 +98,7 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                     <i class="fas fa-edit mr-1"></i> Editar
                 </a>
                 <form action="<?= route_to('medico_planes_delete', $plan['id']) ?>" method="post" class="d-inline"
-                      id="form-eliminar-plan">
+                    id="form-eliminar-plan">
                     <?= csrf_field() ?>
                     <input type="hidden" name="_method" value="DELETE">
                     <button type="submit" class="btn btn-danger">
@@ -107,7 +150,7 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                     <span class="info-box-icon bg-primary"><i class="fas fa-tasks"></i></span>
                     <div class="info-box-content">
                         <span class="info-box-text">Actividades totales</span>
-                        <span class="info-box-number"><?= esc($resumen['total'] ?? 0) ?></span>
+                        <span class="info-box-number" data-resumen="total"><?= esc($resumen['total'] ?? 0) ?></span>
                     </div>
                 </div>
             </div>
@@ -117,7 +160,7 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                         <span class="info-box-icon bg-secondary"><i class="fas fa-flag"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text"><?= esc($estadoResumen['nombre'] ?? 'Estado') ?></span>
-                            <span class="info-box-number"><?= esc($estadoResumen['total'] ?? 0) ?></span>
+                            <span class="info-box-number" data-resumen-estado="<?= esc($estadoResumen['slug'] ?? '') ?>"><?= esc($estadoResumen['total'] ?? 0) ?></span>
                         </div>
                     </div>
                 </div>
@@ -127,7 +170,7 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                     <span class="info-box-icon bg-success"><i class="fas fa-check"></i></span>
                     <div class="info-box-content">
                         <span class="info-box-text">Validadas</span>
-                        <span class="info-box-number"><?= esc($resumen['validadas'] ?? 0) ?></span>
+                        <span class="info-box-number" data-resumen="validadas"><?= esc($resumen['validadas'] ?? 0) ?></span>
                     </div>
                 </div>
             </div>
@@ -136,7 +179,7 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                     <span class="info-box-icon bg-warning"><i class="fas fa-clock"></i></span>
                     <div class="info-box-content">
                         <span class="info-box-text">Pendientes de validación</span>
-                        <span class="info-box-number"><?= esc($resumen['noValidadas'] ?? 0) ?></span>
+                        <span class="info-box-number" data-resumen="noValidadas"><?= esc($resumen['noValidadas'] ?? 0) ?></span>
                     </div>
                 </div>
             </div>
@@ -153,7 +196,7 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                     </div>
                 <?php else: ?>
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover mb-0">
+                        <table class="table table-striped table-hover mb-0" id="tabla-actividades-medico">
                             <thead>
                                 <tr>
                                     <th scope="col">Nombre</th>
@@ -161,7 +204,8 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                                     <th scope="col" class="text-nowrap">Inicio</th>
                                     <th scope="col" class="text-nowrap">Fin</th>
                                     <th scope="col">Estado</th>
-                                    <th scope="col">Validado</th>
+                                    <th scope="col" class="text-nowrap tabla-validado-col">Validado</th>
+                                    <th scope="col" class="text-nowrap tabla-accion-col">Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -171,24 +215,74 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                                     if (mb_strlen($descripcion) > 140) {
                                         $descripcion = mb_substr($descripcion, 0, 137) . '...';
                                     }
-                                    $validado = $actividad['validado'];
-                                    $estadoNombre = $actividad['estado_nombre'] ?? 'Estado sin nombre';
+
+                                    $actividadId        = (int) ($actividad['id'] ?? 0);
+                                    $estadoSlug         = (string) ($actividad['estado_slug'] ?? '');
+                                    $estadoNombre       = $actividad['estado_nombre'] ?? 'Estado sin nombre';
+                                    $estadoBadge        = 'badge-secondary';
+
+                                    switch ($estadoSlug) {
+                                        case 'completada':
+                                            $estadoBadge = 'badge-success';
+                                            break;
+                                        case 'vencida':
+                                            $estadoBadge = 'badge-danger';
+                                            break;
+                                    }
+
+                                    $validadoValor      = $actividad['validado'] ?? null;
+                                    $validadoPendiente  = $validadoValor === null;
+                                    $estaValidado       = filter_var($validadoValor, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true;
+                                    $fechaValidacion    = $actividad['fecha_validacion'] ?? null;
+                                    $puedeValidar       = $estadoSlug === 'completada' && ! $estaValidado;
+                                    $puedeDesvalidar    = $estaValidado || $estadoSlug !== 'completada';
                                     ?>
-                                    <tr>
+                                    <tr data-actividad-id="<?= esc((string) $actividadId) ?>"
+                                        data-estado="<?= esc($estadoSlug) ?>"
+                                        data-validado="<?= $estaValidado ? '1' : '0' ?>"
+                                        data-fecha-validacion="<?= esc($fechaValidacion ?? '') ?>">
                                         <td><?= esc($actividad['nombre'] ?? 'Actividad') ?></td>
                                         <td><?= esc($descripcion) ?></td>
                                         <td class="text-nowrap"><?= esc($formatearFecha($actividad['fecha_inicio'] ?? null)) ?></td>
                                         <td class="text-nowrap"><?= esc($formatearFecha($actividad['fecha_fin'] ?? null)) ?></td>
                                         <td>
-                                            <span class="badge badge-secondary"><?= esc($estadoNombre) ?></span>
+                                            <span class="badge <?= esc($estadoBadge) ?>"><?= esc($estadoNombre) ?></span>
                                         </td>
-                                        <td>
-                                            <?php if ($validado === null): ?>
+                                        <td data-role="validado" class="tabla-validado-col">
+                                            <?php if ($estaValidado): ?>
+                                                <span class="badge badge-success">Validada</span>
+                                                <?php if ($fechaValidacion): ?>
+                                                    <div class="validado-detalle">
+                                                        Validado el <?= esc($formatearFecha($fechaValidacion, true)) ?>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <div class="validado-detalle validado-detalle--placeholder">Validado el 00/00/0000 00:00</div>
+                                                <?php endif; ?>
+                                            <?php elseif ($validadoPendiente): ?>
                                                 <span class="badge badge-warning">Pendiente</span>
-                                            <?php elseif ($validado): ?>
-                                                <span class="badge badge-success">Sí</span>
+                                                <div class="validado-detalle validado-detalle--placeholder">Validado el 00/00/0000 00:00</div>
                                             <?php else: ?>
                                                 <span class="badge badge-secondary">No</span>
+                                                <div class="validado-detalle validado-detalle--placeholder">Validado el 00/00/0000 00:00</div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-nowrap tabla-accion-col" data-role="accion">
+                                            <?php if ($puedeValidar): ?>
+                                                <button type="button"
+                                                    class="btn btn-success btn-sm"
+                                                    data-action="validar"
+                                                    data-actividad-id="<?= esc((string) $actividadId) ?>">
+                                                    Validar
+                                                </button>
+                                            <?php elseif ($puedeDesvalidar): ?>
+                                                <button type="button"
+                                                    class="btn btn-outline-warning btn-sm"
+                                                    data-action="desvalidar"
+                                                    data-actividad-id="<?= esc((string) $actividadId) ?>">
+                                                    Desvalidar
+                                                </button>
+                                            <?php else: ?>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" disabled>Validar</button>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -227,7 +321,259 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
     </div>
 </div>
 <script>
-    (function () {
+    (function() {
+        var tabla = document.getElementById('tabla-actividades-medico');
+        if (!tabla) {
+            return;
+        }
+
+        var validarBaseUrl = '<?= site_url('medico/planes/actividades') ?>';
+
+        function endpointValidar(id) {
+            return validarBaseUrl + '/' + id + '/validar';
+        }
+
+        function endpointDesvalidar(id) {
+            return validarBaseUrl + '/' + id + '/desvalidar';
+        }
+
+        function escapeHtml(texto) {
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(texto == null ? '' : String(texto)));
+            return div.innerHTML;
+        }
+
+        function formatearFechaHora(fechaIso) {
+            if (!fechaIso) {
+                return '';
+            }
+            var normalizada = String(fechaIso).replace(' ', 'T');
+            var date = new Date(normalizada);
+            if (Number.isNaN(date.getTime())) {
+                return '';
+            }
+            return date.toLocaleDateString('es-AR') + ' ' + date.toLocaleTimeString('es-AR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function mostrarToast(mensaje, tipo) {
+            var clase = 'bg-success';
+            if (tipo === 'warning') {
+                clase = 'bg-warning';
+            } else if (tipo === 'danger') {
+                clase = 'bg-danger';
+            }
+
+            if (window.jQuery && typeof window.jQuery(document).Toasts === 'function') {
+                window.jQuery(document).Toasts('create', {
+                    class: clase,
+                    title: 'Validación',
+                    body: mensaje,
+                    autohide: true,
+                    delay: 4000,
+                });
+                return;
+            }
+
+            console.log(mensaje);
+        }
+
+        function buildValidadoHtml(actividad) {
+            var plantillaDetalle = '<div class="validado-detalle validado-detalle--placeholder">Validado el 00/00/0000 00:00</div>';
+
+            if (actividad.validado === true) {
+                var detalle = actividad.fecha_validacion ? formatearFechaHora(actividad.fecha_validacion) : '';
+                var cuerpoDetalle = detalle !== '' ?
+                    '<div class="validado-detalle">Validado el ' + escapeHtml(detalle) + '</div>' :
+                    plantillaDetalle;
+
+                return '<span class="badge badge-success">Validada</span>' + cuerpoDetalle;
+            }
+
+            if (actividad.validado === null) {
+                return '<span class="badge badge-warning">Pendiente</span>' + plantillaDetalle;
+            }
+
+            return '<span class="badge badge-secondary">No</span>' + plantillaDetalle;
+        }
+
+        function buildAccionHtml(actividad) {
+            var idTexto = actividad.id != null ? String(actividad.id) : '';
+            var idSeguro = escapeHtml(idTexto);
+            var estado = actividad.estado_slug || '';
+            var validado = actividad.validado === true;
+
+            if (estado === 'completada' && !validado) {
+                return '<button type="button" class="btn btn-success btn-sm" data-action="validar" data-actividad-id="' + idSeguro + '">Validar</button>';
+            }
+
+            if (validado || estado !== 'completada') {
+                return '<button type="button" class="btn btn-outline-warning btn-sm" data-action="desvalidar" data-actividad-id="' + idSeguro + '">Desvalidar</button>';
+            }
+
+            return '<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Validar</button>';
+        }
+
+        function actualizarResumen(resumen) {
+            if (!resumen) {
+                return;
+            }
+
+            var totales = {
+                total: resumen.total,
+                validadas: resumen.validadas,
+                noValidadas: resumen.noValidadas
+            };
+
+            Object.keys(totales).forEach(function(clave) {
+                if (typeof totales[clave] === 'undefined') {
+                    return;
+                }
+                var elemento = document.querySelector('[data-resumen=\"' + clave + '\"]');
+                if (elemento) {
+                    elemento.textContent = totales[clave];
+                }
+            });
+
+            if (Array.isArray(resumen.porEstado)) {
+                resumen.porEstado.forEach(function(estado) {
+                    if (!estado || !estado.slug) {
+                        return;
+                    }
+                    var elemento = document.querySelector('[data-resumen-estado=\"' + estado.slug + '\"]');
+                    if (elemento) {
+                        elemento.textContent = estado.total;
+                    }
+                });
+            }
+        }
+
+        function actualizarFila(actividad) {
+            var idTexto = actividad.id != null ? String(actividad.id) : '';
+            var fila = tabla.querySelector('tbody tr[data-actividad-id=\"' + idTexto + '\"]');
+            if (!fila) {
+                return;
+            }
+
+            fila.setAttribute('data-estado', actividad.estado_slug || '');
+            fila.setAttribute('data-validado', actividad.validado === true ? '1' : '0');
+            fila.setAttribute('data-fecha-validacion', actividad.fecha_validacion || '');
+
+            var celdaValidado = fila.querySelector('[data-role=\"validado\"]');
+            if (celdaValidado) {
+                celdaValidado.innerHTML = buildValidadoHtml(actividad);
+            }
+
+            var celdaAccion = fila.querySelector('[data-role=\"accion\"]');
+            if (celdaAccion) {
+                celdaAccion.innerHTML = buildAccionHtml(actividad);
+            }
+        }
+
+        function manejarRespuesta(json, accion) {
+            if (json && json.data && json.data.actividad) {
+                actualizarFila(json.data.actividad);
+            }
+
+            if (json && json.data && json.data.resumen) {
+                actualizarResumen(json.data.resumen);
+            }
+
+            if (!json) {
+                mostrarToast('Respuesta inválida del servidor.', 'danger');
+                return;
+            }
+
+            var estado = json.status || '';
+            var warningStatuses = ['already_validated', 'already_unvalidated'];
+            var mensajeExito = accion === 'desvalidar' ?
+                'Validación revertida.' :
+                'Actividad validada.';
+            var mensajeError = accion === 'desvalidar' ?
+                'No se pudo desvalidar la actividad.' :
+                'No se pudo validar la actividad.';
+
+            if (json.success) {
+                var tipo = warningStatuses.indexOf(estado) !== -1 ? 'warning' : 'success';
+                mostrarToast(json.message || mensajeExito, tipo);
+            } else {
+                var tipoError = warningStatuses.indexOf(estado) !== -1 ? 'warning' : 'danger';
+                mostrarToast(json.message || mensajeError, tipoError);
+            }
+        }
+
+        function enviarSolicitud(accion, actividadId) {
+            var endpoint = accion === 'desvalidar' ?
+                endpointDesvalidar(actividadId) :
+                endpointValidar(actividadId);
+
+            return fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(function(response) {
+                    return response.json().catch(function() {
+                        return {
+                            success: false,
+                            message: 'Respuesta inválida del servidor.'
+                        };
+                    });
+                })
+                .then(function(json) {
+                    manejarRespuesta(json, accion);
+                    return json;
+                })
+                .catch(function() {
+                    var mensaje = accion === 'desvalidar' ?
+                        'No se pudo contactar al servidor. Inténtalo nuevamente.' :
+                        'No se pudo contactar al servidor. Inténtalo nuevamente.';
+                    mostrarToast(mensaje, 'danger');
+                    throw new Error('network');
+                });
+        }
+
+        tabla.addEventListener('click', function(event) {
+            var boton = event.target.closest('[data-action]');
+            if (!boton || boton.disabled) {
+                return;
+            }
+
+            var accion = boton.getAttribute('data-action');
+            var actividadId = boton.getAttribute('data-actividad-id');
+
+            if (!accion || !actividadId) {
+                return;
+            }
+
+            var contenidoOriginal = boton.innerHTML;
+            var textoProceso = accion === 'desvalidar' ? 'Desvalidando...' : 'Validando...';
+
+            boton.disabled = true;
+            boton.setAttribute('data-loading', 'true');
+            boton.innerHTML = '<span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span>' + escapeHtml(textoProceso);
+
+            enviarSolicitud(accion, actividadId).then(function(json) {
+                if (!json || !json.data || !json.data.actividad) {
+                    boton.disabled = false;
+                    boton.innerHTML = contenidoOriginal;
+                    boton.removeAttribute('data-loading');
+                }
+            }).catch(function() {
+                boton.disabled = false;
+                boton.innerHTML = contenidoOriginal;
+                boton.removeAttribute('data-loading');
+            });
+        });
+    })();
+</script>
+<script>
+    (function() {
         const formEliminar = document.getElementById('form-eliminar-plan');
         const modalElement = $('#modal-confirmar-eliminar');
         const botonConfirmar = document.getElementById('btn-confirmar-eliminar');
@@ -238,7 +584,7 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
 
         let submitPendiente = false;
 
-        formEliminar.addEventListener('submit', function (event) {
+        formEliminar.addEventListener('submit', function(event) {
             if (submitPendiente) {
                 submitPendiente = false;
                 return;
@@ -248,7 +594,7 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
             modalElement.modal('show');
         });
 
-        botonConfirmar.addEventListener('click', function () {
+        botonConfirmar.addEventListener('click', function() {
             submitPendiente = true;
             modalElement.modal('hide');
             formEliminar.submit();

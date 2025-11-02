@@ -13,6 +13,8 @@ use App\Exceptions\PageForbiddenException;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 use CodeIgniter\Database\Exceptions\DataException;
 use CodeIgniter\Exceptions\PageNotFoundException;
+use CodeIgniter\HTTP\ResponseInterface;
+use InvalidArgumentException;
 
 class Planes extends BaseController
 {
@@ -199,6 +201,7 @@ class Planes extends BaseController
                     'fecha_fin'      => $actividad['fecha_fin'],
                     'estado_id'      => $estadoPendiente['id'],
                     'validado'       => null,
+                    'fecha_validacion'     => null,
                 ];
 
                 if ($this->actividadModel->insert($actividadPayload) === false) {
@@ -253,6 +256,106 @@ class Planes extends BaseController
         ];
 
         return view('medico/planes/show', $this->layoutData() + $data);
+    }
+
+    public function validarActividad(int $actividadId): ResponseInterface
+    {
+        $medico = $this->obtenerMedicoActual();
+
+        try {
+            $resultado = $this->procesarValidacionActividad($medico->id, $actividadId);
+
+            $status    = $resultado['status'] ?? 'validated';
+            $statusCode = ResponseInterface::HTTP_OK;
+            $success   = in_array($status, ['validated', 'already_validated'], true);
+
+            if ($status === 'estado_invalido') {
+                $statusCode = ResponseInterface::HTTP_BAD_REQUEST;
+                $success    = false;
+            }
+
+            return $this->response
+                ->setStatusCode($statusCode)
+                ->setJSON([
+                    'success' => $success,
+                    'status'  => $status,
+                    'message' => $resultado['message'] ?? '',
+                    'data'    => [
+                        'actividad' => $resultado['actividad'] ?? null,
+                        'resumen'   => $resultado['resumen'] ?? null,
+                    ],
+                ]);
+        } catch (InvalidArgumentException $exception) {
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ]);
+        } catch (PageForbiddenException $exception) {
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_FORBIDDEN)
+                ->setJSON([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ]);
+        } catch (\Throwable $exception) {
+            log_message('error', 'Error al validar actividad: {exception}', ['exception' => $exception]);
+
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'No se pudo validar la actividad. Inténtalo nuevamente.',
+                ]);
+        }
+    }
+    public function desvalidarActividad(int $actividadId): ResponseInterface
+    {
+        $medico = $this->obtenerMedicoActual();
+
+        try {
+            $resultado = $this->procesarDesvalidacionActividad($medico->id, $actividadId);
+
+            $status     = $resultado['status'] ?? 'unvalidated';
+            $success    = in_array($status, ['unvalidated', 'already_unvalidated'], true);
+            $statusCode = $success ? ResponseInterface::HTTP_OK : ResponseInterface::HTTP_BAD_REQUEST;
+
+            return $this->response
+                ->setStatusCode($statusCode)
+                ->setJSON([
+                    'success' => $success,
+                    'status'  => $status,
+                    'message' => $resultado['message'] ?? '',
+                    'data'    => [
+                        'actividad' => $resultado['actividad'] ?? null,
+                        'resumen'   => $resultado['resumen'] ?? null,
+                    ],
+                ]);
+        } catch (InvalidArgumentException $exception) {
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ]);
+        } catch (PageForbiddenException $exception) {
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_FORBIDDEN)
+                ->setJSON([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ]);
+        } catch (\Throwable $exception) {
+            log_message('error', 'Error al desvalidar actividad: {exception}', ['exception' => $exception]);
+
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'No se pudo desvalidar la actividad. Inténtalo nuevamente.',
+                ]);
+        }
     }
 
     public function edit(int $planId)
@@ -419,6 +522,7 @@ class Planes extends BaseController
                         if ($haCambiado && $actividadEntity->validado === true) {
                             $payload['validado'] = null;
                             $payload['estado_id'] = $estadoPendiente['id'];
+                            $payload['fecha_validacion'] = null;
                         }
                     }
 
@@ -438,6 +542,7 @@ class Planes extends BaseController
                     'fecha_fin'      => $actividadInput['fecha_fin'],
                     'estado_id'      => $estadoPendiente['id'],
                     'validado'       => null,
+                    'fecha_validacion'     => null,
                 ];
 
                 if ($this->actividadModel->insert($payload) === false) {
@@ -680,6 +785,277 @@ class Planes extends BaseController
         usort($resumen['porEstado'], static fn ($a, $b) => $a['orden'] <=> $b['orden']);
 
         return $resumen;
+    }
+
+    /**
+     * @return array{
+     *     status: string,
+     *     message: string,
+     *     actividad: array<string, mixed>,
+     *     resumen: array<string, mixed>
+     * }
+     */
+    private function procesarValidacionActividad(int $medicoId, int $actividadId): array
+    {
+        $contexto = $this->obtenerActividadContexto($medicoId, $actividadId);
+
+        $estadoCompletada = $this->estadoActividadModel->findBySlug('completada');
+        if ($estadoCompletada === null) {
+            throw new InvalidArgumentException('No se encontró el estado completada.');
+        }
+
+        $planId = (int) ($contexto['plan_id'] ?? 0);
+
+        if (($contexto['estado_slug'] ?? '') !== 'completada') {
+            $datos = $this->obtenerActividadYResumen($planId, $actividadId);
+
+            return [
+                'status'    => 'estado_invalido',
+                'message'   => 'La actividad ya no está en estado "completada".',
+                'actividad' => $this->prepararActividadRespuesta($datos['actividad']),
+                'resumen'   => $datos['resumen'],
+            ];
+        }
+
+        if ($this->esValorVerdadero($contexto['validado'] ?? null)) {
+            $datos = $this->obtenerActividadYResumen($planId, $actividadId);
+
+            return [
+                'status'    => 'already_validated',
+                'message'   => 'Esta actividad ya fue validada.',
+                'actividad' => $this->prepararActividadRespuesta($datos['actividad']),
+                'resumen'   => $datos['resumen'],
+            ];
+        }
+
+        $now                 = date('Y-m-d H:i:s');
+        $estadoCompletadaId  = (int) ($estadoCompletada['id'] ?? 0);
+
+        $builder = $this->actividadModel->builder();
+        $builder->set([
+            'validado'             => 1,
+            'fecha_validacion'     => $now,
+            'updated_at'           => $now,
+        ]);
+        $builder->where('id', $actividadId)
+            ->where('plan_id', $planId)
+            ->where('deleted_at', null)
+            ->where('estado_id', $estadoCompletadaId)
+            ->groupStart()
+                ->where('validado', null)
+                ->orWhere('validado', 0)
+            ->groupEnd();
+
+        if ($builder->update() === false) {
+            throw new DatabaseException('No se pudo validar la actividad.');
+        }
+
+        $afectadas = $this->actividadModel->db->affectedRows();
+        $datos     = $this->obtenerActividadYResumen($planId, $actividadId);
+        $actividadActual = $datos['actividad'];
+
+        if ($afectadas === 0) {
+            if ($this->esValorVerdadero($actividadActual['validado'] ?? null)) {
+                $status  = 'already_validated';
+                $message = 'Esta actividad ya fue validada.';
+            } elseif (($actividadActual['estado_slug'] ?? '') !== 'completada') {
+                $status  = 'estado_invalido';
+                $message = 'La actividad ya no está en estado "completada".';
+            } else {
+                throw new DatabaseException('No se pudo validar la actividad.');
+            }
+
+            return [
+                'status'    => $status,
+                'message'   => $message,
+                'actividad' => $this->prepararActividadRespuesta($actividadActual),
+                'resumen'   => $datos['resumen'],
+            ];
+        }
+
+        return [
+            'status'    => 'validated',
+            'message'   => 'Actividad validada.',
+            'actividad' => $this->prepararActividadRespuesta($actividadActual),
+            'resumen'   => $datos['resumen'],
+        ];
+    }
+
+    private function procesarDesvalidacionActividad(int $medicoId, int $actividadId): array
+    {
+        $contexto = $this->obtenerActividadContexto($medicoId, $actividadId);
+        $planId   = (int) ($contexto['plan_id'] ?? 0);
+
+        if (! $this->esValorVerdadero($contexto['validado'] ?? null)) {
+            $datos = $this->obtenerActividadYResumen($planId, $actividadId);
+
+            return [
+                'status'    => 'already_unvalidated',
+                'message'   => 'La actividad ya no estaba validada.',
+                'actividad' => $this->prepararActividadRespuesta($datos['actividad']),
+                'resumen'   => $datos['resumen'],
+            ];
+        }
+
+        $now = date('Y-m-d H:i:s');
+
+        $builder = $this->actividadModel->builder();
+        $builder->set([
+            'validado'         => null,
+            'fecha_validacion' => null,
+            'updated_at'       => $now,
+        ]);
+        $builder->where('id', $actividadId)
+            ->where('plan_id', $planId)
+            ->where('deleted_at', null)
+            ->where('validado', 1);
+
+        if ($builder->update() === false) {
+            throw new DatabaseException('No se pudo desvalidar la actividad.');
+        }
+
+        $afectadas = $this->actividadModel->db->affectedRows();
+        $datos     = $this->obtenerActividadYResumen($planId, $actividadId);
+        $actividadActual = $datos['actividad'];
+        $sigueValidada   = $this->esValorVerdadero($actividadActual['validado'] ?? null);
+
+        if ($afectadas === 0 && $sigueValidada) {
+            throw new DatabaseException('No se pudo desvalidar la actividad.');
+        }
+
+        if ($sigueValidada) {
+            return [
+                'status'    => 'already_unvalidated',
+                'message'   => 'La actividad ya no estaba validada.',
+                'actividad' => $this->prepararActividadRespuesta($actividadActual),
+                'resumen'   => $datos['resumen'],
+            ];
+        }
+
+        return [
+            'status'    => 'unvalidated',
+            'message'   => 'Validación revertida.',
+            'actividad' => $this->prepararActividadRespuesta($actividadActual),
+            'resumen'   => $datos['resumen'],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function obtenerActividadContexto(int $medicoId, int $actividadId): array
+    {
+        $builder = $this->actividadModel->builder('actividades AS a');
+        $fila = $builder
+            ->select([
+                'a.id',
+                'a.plan_id',
+                'a.estado_id',
+                'a.validado',
+                'a.fecha_validacion',
+                'planes_cuidado.creador_user_id',
+                'estado_actividad.slug AS estado_slug',
+            ])
+            ->join('planes_cuidado', 'planes_cuidado.id = a.plan_id', 'inner')
+            ->join('estado_actividad', 'estado_actividad.id = a.estado_id', 'left')
+            ->where('a.id', $actividadId)
+            ->where('a.deleted_at', null)
+            ->where('planes_cuidado.deleted_at', null)
+            ->get()
+            ->getFirstRow('array');
+
+        if ($fila === null) {
+            throw new InvalidArgumentException('La actividad indicada no existe.');
+        }
+
+        if ((int) ($fila['creador_user_id'] ?? 0) !== $medicoId) {
+            throw PageForbiddenException::forPageForbidden('No tienes acceso a esta actividad.');
+        }
+
+        return $fila;
+    }
+
+    /**
+     * @return array{
+     *     actividad: array<string, mixed>,
+     *     resumen: array<string, mixed>
+     * }
+     */
+    private function obtenerActividadYResumen(int $planId, int $actividadId): array
+    {
+        $actividades    = $this->actividadModel->findPorPlanConEstado($planId);
+        $estadosCatalogo = $this->estadoActividadModel->findActivos();
+        $actividad      = $this->buscarActividadPorId($actividades, $actividadId);
+
+        if ($actividad === null) {
+            throw new DatabaseException('No se pudo recuperar la actividad actualizada.');
+        }
+
+        return [
+            'actividad' => $actividad,
+            'resumen'   => $this->construirResumenActividades($actividades, $estadosCatalogo),
+        ];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $actividades
+     */
+    private function buscarActividadPorId(array $actividades, int $actividadId): ?array
+    {
+        foreach ($actividades as $actividad) {
+            if ((int) ($actividad['id'] ?? 0) === $actividadId) {
+                return $actividad;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $actividad
+     *
+     * @return array<string, mixed>
+     */
+    private function prepararActividadRespuesta(array $actividad): array
+    {
+        $validadoOriginal   = $actividad['validado'] ?? null;
+        $validadoNormalizado = null;
+
+        if ($validadoOriginal !== null) {
+            $validadoNormalizado = $this->esValorVerdadero($validadoOriginal);
+        }
+
+        return [
+            'id'                   => (int) ($actividad['id'] ?? 0),
+            'plan_id'              => (int) ($actividad['plan_id'] ?? 0),
+            'nombre'               => $actividad['nombre'] ?? '',
+            'descripcion'          => $actividad['descripcion'] ?? '',
+            'fecha_inicio'         => $actividad['fecha_inicio'] ?? null,
+            'fecha_fin'            => $actividad['fecha_fin'] ?? null,
+            'estado_id'            => isset($actividad['estado_id']) ? (int) $actividad['estado_id'] : null,
+            'estado_slug'          => $actividad['estado_slug'] ?? null,
+            'estado_nombre'        => $actividad['estado_nombre'] ?? null,
+            'validado'             => $validadoNormalizado,
+            'fecha_validacion'     => $actividad['fecha_validacion'] ?? null,
+        ];
+    }
+
+    /**
+     * @param mixed $valor
+     */
+    private function esValorVerdadero($valor): bool
+    {
+        if ($valor === null) {
+            return false;
+        }
+
+        if (is_bool($valor)) {
+            return $valor;
+        }
+
+        $filtrado = filter_var($valor, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        return $filtrado === true;
     }
 
     private function planNoDisponibleRedirect()
