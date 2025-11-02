@@ -44,6 +44,7 @@
                                     <th scope="col">Nombre</th>
                                     <th scope="col" class="text-nowrap">Vigencia</th>
                                     <th scope="col" class="text-nowrap">Creado</th>
+                                    <th scope="col" class="text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -65,9 +66,18 @@
                                     <tr>
                                         <td><?= esc($pacienteNombre ?: 'Paciente sin datos') ?></td>
                                         <td><?= esc($diagnostico) ?></td>
-                                        <td><?= esc($nombrePlan) ?></td>
+                                        <td>
+                                            <a href="<?= route_to('medico_planes_show', $plan['id']) ?>">
+                                                <?= esc($nombrePlan) ?>
+                                            </a>
+                                        </td>
                                         <td class="text-nowrap"><?= esc($fechaInicio . ' → ' . $fechaFin) ?></td>
                                         <td class="text-nowrap"><?= esc($fechaCreacion) ?></td>
+                                        <td class="text-right">
+                                            <a href="<?= route_to('medico_planes_show', $plan['id']) ?>" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>

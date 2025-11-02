@@ -23,4 +23,8 @@ $routes->group('medico', function ($routes) {
     $routes->get('planes', 'Medico\Planes::index', ['as' => 'medico_planes_index']);
     $routes->get('planes/nuevo', 'Medico\Planes::create', ['as' => 'medico_planes_create']);
     $routes->post('planes', 'Medico\Planes::store', ['as' => 'medico_planes_store']);
+    $routes->get('planes/(:num)', 'Medico\Planes::show/$1', ['as' => 'medico_planes_show']);
+    $routes->get('planes/(:num)/editar', 'Medico\Planes::edit/$1', ['as' => 'medico_planes_edit']);
+    $routes->put('planes/(:num)', 'Medico\Planes::update/$1', ['as' => 'medico_planes_update']);
+    $routes->delete('planes/(:num)', 'Medico\Planes::delete/$1', ['as' => 'medico_planes_delete']);
 });

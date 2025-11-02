@@ -33,4 +33,30 @@ class ActividadModel extends Model
         'fecha_fin'    => 'required',
         'estado_id'    => 'required|is_natural_no_zero',
     ];
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function findPorPlanConEstado(int $planId): array
+    {
+        return $this->asArray()
+            ->select([
+                'actividades.id',
+                'actividades.plan_id',
+                'actividades.nombre',
+                'actividades.descripcion',
+                'actividades.fecha_creacion',
+                'actividades.fecha_inicio',
+                'actividades.fecha_fin',
+                'actividades.estado_id',
+                'actividades.validado',
+                'estado_actividad.nombre AS estado_nombre',
+                'estado_actividad.slug AS estado_slug',
+            ])
+            ->join('estado_actividad', 'estado_actividad.id = actividades.estado_id', 'left')
+            ->where('actividades.plan_id', $planId)
+            ->orderBy('actividades.fecha_inicio', 'ASC')
+            ->orderBy('actividades.id', 'ASC')
+            ->findAll();
+    }
 }

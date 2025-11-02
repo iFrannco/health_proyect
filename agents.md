@@ -235,6 +235,8 @@ Los médicos únicamente pueden listar, editar o eliminar los planes que ellos m
 
 * **Sin** lógica de negocio en vistas/controladores: usar Models/Entities/Libraries.  
 
+* **Prohibido** crear, modificar o eliminar archivos de pruebas (`tests/`), ni incorporar nuevos casos de testing automatizado.
+
 * **Nomenclatura**:
 
   * Los nombres de **variables, métodos y clases** deben estar en **español**.
