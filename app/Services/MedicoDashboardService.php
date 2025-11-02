@@ -11,13 +11,9 @@ class MedicoDashboardService
 {
     private const ESTADOS_PLAN_FINALIZADOS = [
         'finalizado',
-        'finalizada',
         'terminado',
-        'terminada',
         'completado',
-        'completada',
         'cerrado',
-        'cerrada',
     ];
 
     private const MESES_CORTOS = [
@@ -255,9 +251,9 @@ class MedicoDashboardService
             ->get()
             ->getResultArray();
 
-        $totalActividades       = count($actividadesRows);
-        $actividadesValidadas   = 0;
-        $actividadesTerminadas  = 0;
+        $totalActividades        = count($actividadesRows);
+        $actividadesValidadas    = 0;
+        $actividadesCompletadas  = 0;
 
         foreach ($actividadesRows as $actividad) {
             if ($this->esValorVerdadero($actividad['validado'] ?? null)) {
@@ -265,8 +261,8 @@ class MedicoDashboardService
             }
 
             $slug = strtolower(trim((string) ($actividad['estado_slug'] ?? '')));
-            if ($slug === 'terminada') {
-                $actividadesTerminadas++;
+            if ($slug === 'completada') {
+                $actividadesCompletadas++;
             }
         }
 
@@ -283,7 +279,7 @@ class MedicoDashboardService
             : 0.0;
 
         $porcentajeAdherencia = $totalActividades > 0
-            ? round(($actividadesTerminadas / $totalActividades) * 100, 1)
+            ? round(($actividadesCompletadas / $totalActividades) * 100, 1)
             : 0.0;
 
         $duracionPromedio = $duracionesValidas > 0

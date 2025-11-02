@@ -164,8 +164,8 @@ class Planes extends BaseController
             );
         }
 
-        $estadoSinIniciar = $this->estadoActividadModel->findBySlug('sin_iniciar');
-        if ($estadoSinIniciar === null) {
+        $estadoPendiente = $this->estadoActividadModel->findBySlug('pendiente');
+        if ($estadoPendiente === null) {
             return $this->redirectBackWithErrors('No se encontró el estado inicial de actividades. Contacta al administrador.', []);
         }
 
@@ -197,7 +197,7 @@ class Planes extends BaseController
                     'fecha_creacion' => date('Y-m-d H:i:s'),
                     'fecha_inicio'   => $actividad['fecha_inicio'],
                     'fecha_fin'      => $actividad['fecha_fin'],
-                    'estado_id'      => $estadoSinIniciar['id'],
+                    'estado_id'      => $estadoPendiente['id'],
                     'validado'       => null,
                 ];
 
@@ -363,8 +363,8 @@ class Planes extends BaseController
             );
         }
 
-        $estadoSinIniciar = $this->estadoActividadModel->findBySlug('sin_iniciar');
-        if ($estadoSinIniciar === null) {
+        $estadoPendiente = $this->estadoActividadModel->findBySlug('pendiente');
+        if ($estadoPendiente === null) {
             return $this->redirectBackWithErrors('No se encontró el estado inicial de actividades. Contacta al administrador.', []);
         }
 
@@ -418,7 +418,7 @@ class Planes extends BaseController
 
                         if ($haCambiado && $actividadEntity->validado === true) {
                             $payload['validado'] = null;
-                            $payload['estado_id'] = $estadoSinIniciar['id'];
+                            $payload['estado_id'] = $estadoPendiente['id'];
                         }
                     }
 
@@ -436,7 +436,7 @@ class Planes extends BaseController
                     'fecha_creacion' => date('Y-m-d H:i:s'),
                     'fecha_inicio'   => $actividadInput['fecha_inicio'],
                     'fecha_fin'      => $actividadInput['fecha_fin'],
-                    'estado_id'      => $estadoSinIniciar['id'],
+                    'estado_id'      => $estadoPendiente['id'],
                     'validado'       => null,
                 ];
 

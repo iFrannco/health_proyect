@@ -163,7 +163,7 @@ $diagnosticosActivos = $kpis['diagnosticosActivos'] ?? 0;
             <div class="info-box-content">
                 <span class="info-box-text">Adherencia del paciente</span>
                 <span class="info-box-number"><?= esc($formatDecimal($kpis['adherenciaPacientes'] ?? 0.0)) ?>%</span>
-                <small class="text-muted">Actividades marcadas como terminadas</small>
+                <small class="text-muted">Actividades marcadas como completadas</small>
             </div>
         </div>
     </div>

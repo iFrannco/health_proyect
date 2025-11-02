@@ -102,6 +102,20 @@ class UpdateActividadEstados extends Migration
                     'updated_at' => date('Y-m-d H:i:s'),
                 ]);
         }
+
+        $mapEstadosPlanes = [
+            'finalizada' => 'finalizado',
+            'terminada'  => 'terminado',
+            'completada' => 'completado',
+            'cerrada'    => 'cerrado',
+        ];
+
+        foreach ($mapEstadosPlanes as $origen => $destino) {
+            $db->query(
+                'UPDATE planes_cuidado SET estado = ? WHERE LOWER(estado) = ?',
+                [$destino, $origen]
+            );
+        }
     }
 
     public function down(): void
@@ -189,4 +203,3 @@ class UpdateActividadEstados extends Migration
         return null;
     }
 }
-
