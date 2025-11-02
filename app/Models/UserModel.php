@@ -75,4 +75,54 @@ class UserModel extends Model
             ->orderBy('users.id', 'ASC')
             ->first();
     }
+
+    public function findPacientePorId(int $userId): ?User
+    {
+        return $this->select('users.*')
+            ->join('roles', 'roles.id = users.role_id', 'inner')
+            ->where('users.id', $userId)
+            ->where('roles.slug', self::ROLE_PACIENTE)
+            ->first();
+    }
+
+    /**
+     * Devuelve un listado paginado de pacientes con filtro opcional por nombre/apellido.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function paginatePacientes(?string $busqueda, int $perPage = 10, string $pagerGroup = 'default'): array
+    {
+        $columnas = [
+            'users.id',
+            'users.nombre',
+            'users.apellido',
+            'users.email',
+            'users.telefono',
+            'users.activo',
+        ];
+
+        $camposDisponibles = $this->db->getFieldNames($this->table);
+        if (in_array('dni', $camposDisponibles, true)) {
+            $columnas[] = 'users.dni';
+        }
+
+        $builder = $this->select($columnas)
+            ->join('roles', 'roles.id = users.role_id', 'inner')
+            ->where('roles.slug', self::ROLE_PACIENTE)
+            ->where('users.activo', 1)
+            ->orderBy('users.apellido', 'ASC')
+            ->orderBy('users.nombre', 'ASC')
+            ->asArray();
+
+        $termino = trim((string) $busqueda);
+        if ($termino !== '') {
+            $builder
+                ->groupStart()
+                    ->like('users.nombre', $termino, 'both', null, true)
+                    ->orLike('users.apellido', $termino, 'both', null, true)
+                ->groupEnd();
+        }
+
+        return $builder->paginate($perPage, $pagerGroup);
+    }
 }

@@ -3,9 +3,19 @@
 <?= $this->section('content') ?>
 <div class="row justify-content-center">
     <div class="col-12 col-lg-8 col-xl-7 mx-auto">
+        <div class="mb-3">
+            <a href="<?= route_to('medico_pacientes_index') ?>" class="btn btn-link p-0 align-baseline">
+                <i class="fas fa-arrow-left mr-1"></i> Volver al listado de pacientes
+            </a>
+        </div>
         <h1 class="mb-4">Nuevo diagnostico</h1>
 
         <?= view('layouts/partials/alerts') ?>
+
+        <?php
+        $pacienteSeleccionadoId = $pacienteSeleccionadoId ?? null;
+        $oldPacienteId = (int) old('paciente_id', $pacienteSeleccionadoId);
+        ?>
 
         <div class="card card-outline card-primary">
             <div class="card-header">
@@ -28,7 +38,7 @@
                             <?php foreach ($pacientes as $paciente): ?>
                                 <?php
                                 $pacienteId     = (int) ($paciente['id'] ?? 0);
-                                $isSelected     = (int) old('paciente_id') === $pacienteId;
+                                $isSelected     = $oldPacienteId === $pacienteId;
                                 $nombrePaciente = trim(($paciente['apellido'] ?? '') . ', ' . ($paciente['nombre'] ?? ''));
                                 ?>
                                 <option value="<?= $pacienteId ?>"<?= $isSelected ? ' selected' : '' ?>>

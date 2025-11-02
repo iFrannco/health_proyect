@@ -17,6 +17,7 @@ $routes->group('paciente', function ($routes) {
 
 $routes->group('medico', function ($routes) {
     $routes->get('home', 'Medico\Home::index');
+    $routes->get('pacientes', 'Medico\Pacientes::index', ['as' => 'medico_pacientes_index']);
     $routes->get('diagnosticos', 'Medico\Diagnosticos::index', ['as' => 'medico_diagnosticos_index']);
     $routes->get('diagnosticos/nuevo', 'Medico\Diagnosticos::create', ['as' => 'medico_diagnosticos_create']);
     $routes->post('diagnosticos', 'Medico\Diagnosticos::store', ['as' => 'medico_diagnosticos_store']);

@@ -40,7 +40,64 @@ class Diagnosticos extends BaseController
     public function create()
     {
         $medico    = $this->obtenerMedicoActual();
+
+        $pacienteSeleccionado     = null;
+        $pacienteSeleccionadoId   = null;
+        $pacienteIdParametro = $this->request->getGet('paciente_id');
+
+        if ($pacienteIdParametro !== null && $pacienteIdParametro !== '') {
+            $pacienteId = (int) $pacienteIdParametro;
+
+            if ($pacienteId > 0) {
+                $pacienteSeleccionado = $this->userModel->findPacientePorId($pacienteId);
+
+                if ($pacienteSeleccionado === null) {
+                    session()->setFlashdata('error', 'El paciente seleccionado ya no está disponible.');
+
+                    return redirect()->to(route_to('medico_pacientes_index'));
+                }
+
+                $pacienteSeleccionadoId = (int) $pacienteSeleccionado->id;
+            }
+        }
+
         $pacientes = $this->userModel->findActivosPorRol(UserModel::ROLE_PACIENTE);
+
+        if ($pacienteSeleccionado !== null) {
+            $yaIncluido = false;
+
+            foreach ($pacientes as $paciente) {
+                if ((int) ($paciente['id'] ?? 0) === $pacienteSeleccionadoId) {
+                    $yaIncluido = true;
+                    break;
+                }
+            }
+
+            if (! $yaIncluido) {
+                $pacientes[] = [
+                    'id'       => $pacienteSeleccionado->id,
+                    'nombre'   => $pacienteSeleccionado->nombre,
+                    'apellido' => $pacienteSeleccionado->apellido,
+                    'email'    => $pacienteSeleccionado->email,
+                    'activo'   => $pacienteSeleccionado->activo,
+                ];
+
+                $normalizar = static function (array $registro): string {
+                    $texto = trim(($registro['apellido'] ?? '') . ' ' . ($registro['nombre'] ?? ''));
+
+                    if (function_exists('mb_strtolower')) {
+                        return mb_strtolower($texto, 'UTF-8');
+                    }
+
+                    return strtolower($texto);
+                };
+
+                usort($pacientes, static function (array $a, array $b) use ($normalizar): int {
+                    return $normalizar($a) <=> $normalizar($b);
+                });
+            }
+        }
+
         $tipos     = $this->tipoDiagnosticoModel->findActivos();
 
         $data = [
@@ -49,6 +106,7 @@ class Diagnosticos extends BaseController
             'pacientes' => $pacientes,
             'tipos'     => $tipos,
             'errors'    => session()->getFlashdata('errors') ?? [],
+            'pacienteSeleccionadoId' => $pacienteSeleccionadoId,
         ];
 
         return view('medico/diagnosticos/create', $this->layoutData() + $data);
