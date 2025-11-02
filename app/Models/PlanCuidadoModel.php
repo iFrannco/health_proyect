@@ -13,6 +13,7 @@ class PlanCuidadoModel extends Model
     protected $useSoftDeletes   = true;
     protected $allowedFields    = [
         'diagnostico_id',
+        'creador_user_id',
         'plan_estandar_id',
         'nombre',
         'descripcion',
@@ -28,6 +29,7 @@ class PlanCuidadoModel extends Model
     protected $skipValidation   = false;
     protected $validationRules  = [
         'diagnostico_id' => 'required|is_natural_no_zero',
+        'creador_user_id' => 'required|is_natural_no_zero',
         'fecha_inicio'   => 'required',
         'fecha_fin'      => 'required',
     ];

@@ -27,6 +27,7 @@ Las actividades creadas comienzan con **estado `sin_iniciar`** y el médico podr
 * Creación de **Plan de Cuidado** manual (no basado en plantilla).
 * Selección de **Paciente** y luego de un **Diagnóstico** de ese paciente para asociar el plan.
 * Carga manual de **actividades** (nombre, descripción, fechas de inicio/fin).
+* Registro del **médico creador** del plan para controlar su visualización y mantenimiento.
 * Asignación automática de `fechaCreacion` del plan y de cada actividad.
 * Estado inicial de cada actividad: `sin_iniciar` (FK a `estado_actividad`).
 * Campo `validado` de actividad como **nullable** y **false** por defecto.
@@ -90,6 +91,7 @@ Las actividades creadas comienzan con **estado `sin_iniciar`** y el médico podr
 * Un plan puede crearse **con al menos una** actividad. 
 * `estado_id` inicial de cada actividad es el valor del catálogo **sin_iniciar**.
 * `validado` inicia **NULL/false** y solo puede volverse **true** cuando el paciente marca la actividad como completada (otra historia).
+* El plan se persiste con el **médico autenticado** como creador.
 
 ---
 
@@ -105,6 +107,7 @@ Las actividades creadas comienzan con **estado `sin_iniciar`** y el médico podr
 **CA-8.** Pueden existir **múltiples planes** para un mismo diagnóstico sin bloquear la operación.
 **CA-9.** No se exige que el médico creador del plan sea el autor del diagnóstico.
 **CA-10.** Las actividades del plan aparecen con **estado inicial `sin_iniciar`** y `validado = NULL/false`.
+**CA-11.** El plan queda asociado al médico que lo crea y solo aparece en su listado de gestión.
 
 ---
 
@@ -125,6 +128,7 @@ Las actividades creadas comienzan con **estado `sin_iniciar`** y el médico podr
 | ---------------- | -------------- | ------------------------------------------ |
 | `id`             | INT (PK)       | Identificador                              |
 | `diagnostico_id` | FK→Diagnostico | Diagnóstico asociado                       |
+| `creadorUserId`  | FK→Usuario     | Médico que crea el plan                    |
 | `plan_estandar_id` | FK→PlanEstandar | Plantilla origen (nullable)                 |
 | `nombre`         | VARCHAR(180)   | Título opcional definido por el médico     |
 | `descripcion`    | TEXT NULL      | Descripción clínica opcional               |

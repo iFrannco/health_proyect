@@ -46,6 +46,7 @@ class Planes extends BaseController
                 'planes_cuidado.fecha_fin',
                 'planes_cuidado.fecha_creacion',
                 'planes_cuidado.estado',
+                'planes_cuidado.creador_user_id',
                 'diagnosticos.descripcion AS diagnostico_descripcion',
                 'paciente.id AS paciente_id',
                 'paciente.nombre AS paciente_nombre',
@@ -53,7 +54,7 @@ class Planes extends BaseController
             ])
             ->join('diagnosticos', 'diagnosticos.id = planes_cuidado.diagnostico_id', 'inner')
             ->join('users AS paciente', 'paciente.id = diagnosticos.destinatario_user_id', 'inner')
-            ->where('diagnosticos.autor_user_id', $medico->id)
+            ->where('planes_cuidado.creador_user_id', $medico->id)
             ->orderBy('planes_cuidado.fecha_creacion', 'DESC')
             ->findAll();
 
@@ -76,7 +77,6 @@ class Planes extends BaseController
                 'diagnosticos.descripcion',
                 'diagnosticos.destinatario_user_id',
             ])
-            ->where('diagnosticos.autor_user_id', $medico->id)
             ->orderBy('diagnosticos.fecha_creacion', 'DESC')
             ->findAll();
 
@@ -148,12 +148,11 @@ class Planes extends BaseController
 
         $diagnostico = $this->diagnosticoModel->asArray()
             ->where('id', $diagnosticoId)
-            ->where('autor_user_id', $medico->id)
             ->first();
 
         if (! $diagnostico || (int) $diagnostico['destinatario_user_id'] !== $paciente->id) {
             return $this->redirectBackWithErrors('Selecciona un diagnóstico válido para el paciente.', [
-                'diagnostico_id' => 'El diagnóstico no pertenece al paciente o no fue emitido por ti.',
+                'diagnostico_id' => 'El diagnóstico no pertenece al paciente seleccionado.',
             ]);
         }
 
@@ -173,6 +172,7 @@ class Planes extends BaseController
 
         $planData = [
             'diagnostico_id' => $diagnosticoId,
+            'creador_user_id' => $medico->id,
             'plan_estandar_id' => null,
             'nombre'         => $this->request->getPost('nombre') ?: null,
             'descripcion'    => $this->request->getPost('descripcion') ?: null,

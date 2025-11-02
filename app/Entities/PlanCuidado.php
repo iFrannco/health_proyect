@@ -18,6 +18,7 @@ class PlanCuidado extends Entity
     protected $casts   = [
         'id' => 'integer',
         'diagnostico_id' => 'integer',
+        'creador_user_id' => 'integer',
         'plan_estandar_id' => '?integer',
         'estado' => 'string'
     ];
@@ -34,6 +35,7 @@ class PlanCuidado extends Entity
         'actividades' => [],
         'diagnostico' => null,
         'plan_estandar_id' => null,
+        'creador_user_id' => null,
     ];
 
     /**

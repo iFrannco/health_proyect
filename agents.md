@@ -144,6 +144,8 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * `diagnostico_id` (FK→diagnosticos.id, **NOT NULL**)
 
+* `creador_user_id` (FK→users.id, **NOT NULL**)
+
 * `plan_estandar_id` (FK→planes_estandar.id, **NULLABLE**)
 
 * `nombre` (VARCHAR 180 NULL), `descripcion` (TEXT NULL)
@@ -155,6 +157,7 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 * `created_at`, `updated_at`, `deleted_at`
 
 **Regla**: el usuario destinatario se obtiene transitivamente por `diagnostico → destinatario_user_id`.
+Los médicos únicamente pueden listar, editar o eliminar los planes que ellos mismos crearon.
 
 ### **`planes_estandar` *(plantillas clínicas)***
 
