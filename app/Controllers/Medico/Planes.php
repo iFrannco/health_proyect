@@ -11,7 +11,6 @@ use App\Models\PlanCuidadoModel;
 use App\Models\UserModel;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 use CodeIgniter\Database\Exceptions\DataException;
-use CodeIgniter\Database\Exceptions\RollbackException;
 use CodeIgniter\Exceptions\PageForbiddenException;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
@@ -218,7 +217,7 @@ class Planes extends BaseController
 
         try {
             $db->transCommit();
-        } catch (RollbackException $exception) {
+        } catch (DatabaseException $exception) {
             return $this->redirectBackWithActividadErrors(
                 'No se pudo crear el plan de cuidado.',
                 [$exception->getMessage()],
@@ -467,7 +466,7 @@ class Planes extends BaseController
 
         try {
             $db->transCommit();
-        } catch (RollbackException $exception) {
+        } catch (DatabaseException $exception) {
             return $this->redirectBackWithActividadErrors(
                 'No se pudo actualizar el plan de cuidado.',
                 [$exception->getMessage()],
@@ -511,7 +510,7 @@ class Planes extends BaseController
 
         try {
             $db->transCommit();
-        } catch (RollbackException $exception) {
+        } catch (DatabaseException $exception) {
             session()->setFlashdata('error', 'No se pudo eliminar el plan de cuidado.');
             session()->setFlashdata('errors', ['general' => $exception->getMessage()]);
 
