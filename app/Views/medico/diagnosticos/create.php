@@ -7,7 +7,7 @@
 
         <?= view('layouts/partials/alerts') ?>
 
-        <div class="card card-primary">
+        <div class="card card-outline card-primary">
             <div class="card-header">
                 <h3 class="card-title mb-0">Registrar diagnostico</h3>
             </div>
@@ -90,7 +90,7 @@
                         <?php endif; ?>
                     </div>
                 </div>
-                <div class="card-footer d-flex flex-column flex-sm-row justify-content-end align-items-stretch align-items-sm-center">
+                <div class="card-footer bg-white border-top-0 d-flex flex-column flex-sm-row justify-content-end align-items-stretch align-items-sm-center">
                     <a
                         href="<?= route_to('medico_diagnosticos_index') ?>"
                         class="btn btn-outline-secondary w-100 w-sm-auto mb-2 mb-sm-0 me-sm-3 mr-sm-3"
