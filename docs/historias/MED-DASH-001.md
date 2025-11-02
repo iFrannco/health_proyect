@@ -57,7 +57,7 @@ El **Dashboard Médico** resume los datos más relevantes sobre **diagnósticos 
 ### **Dependencias / Supuestos**
 
 * Existen tablas `Diagnostico`, `PlanDeCuidado`, `Actividad`, y sus relaciones (`diagnostico.medico_id`, `plan.medico_id`).
-* Los estados de planes y actividades están normalizados (`activo`, `terminado`, `sin_iniciar`, etc.).
+* Los estados de planes y actividades están normalizados (`activo`, `finalizado`, `pendiente`, `completada`, `vencida`, etc.).
 * Los datos estadísticos pueden calcularse dinámicamente o mediante vistas/materializadas según rendimiento.
 
 ---
@@ -100,4 +100,3 @@ El **Dashboard Médico** resume los datos más relevantes sobre **diagnósticos 
 * Médico sin diagnósticos o planes → mostrar dashboard vacío con mensajes informativos.
 * Fallo en la carga de datos → mostrar error genérico con opción de reintentar.
 * Fechas de planes o actividades incoherentes → excluir del cálculo y registrar log.
-

@@ -13,13 +13,14 @@ class Actividad extends Entity
         'deleted_at',
         'fecha_creacion',
         'fecha_inicio',
-        'fecha_fin'
+        'fecha_fin',
+        'paciente_completada_en',
     ];
     protected $casts   = [
         'id' => 'integer',
         'plan_id' => 'integer',
         'estado_id' => 'integer',
-        'validado' => '?boolean'
+        'validado' => '?boolean',
     ];
 
     /**
@@ -34,5 +35,17 @@ class Actividad extends Entity
         }
 
         $this->attributes['validado'] = filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    }
+
+    /**
+     * Lleva el comentario del paciente a null cuando queda vacío.
+     *
+     * @param mixed $comentario
+     */
+    protected function setPacienteComentario($comentario): void
+    {
+        $texto = trim((string) $comentario);
+
+        $this->attributes['paciente_comentario'] = $texto === '' ? null : $texto;
     }
 }

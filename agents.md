@@ -183,7 +183,7 @@ Los médicos únicamente pueden listar, editar o eliminar los planes que ellos m
 
 ### **`estado_actividad` *(catálogo)***
 
-* `id` (PK), `nombre` (UNIQUE: `sin iniciar`, `iniciada`, `terminada`), `slug` (UNIQUE), `orden` (INT)
+* `id` (PK), `nombre` (UNIQUE: `pendiente`, `completada`, `vencida`), `slug` (UNIQUE), `orden` (INT)
 
 * **Seed obligatorio** con los 3 estados.
 
@@ -203,7 +203,7 @@ Los médicos únicamente pueden listar, editar o eliminar los planes que ellos m
 
 **Reglas**:
 
-* `validado = TRUE` **solo** si `estado_id` \= `terminada`.
+* `validado = TRUE` **solo** si `estado_id` \= `completada`.
 
 ### **`documentacion`**
 
@@ -222,7 +222,7 @@ Los médicos únicamente pueden listar, editar o eliminar los planes que ellos m
 * Plan de cuidado N–1 Plan estandar (nullable).
 * Plan de cuidado 1–N Actividades (instancias).
 
-  * Para planes personalizados (MED-PLAN-001) las actividades se cargan manualmente con `estado_id = sin_iniciar` y `validado = NULL`.
+  * Para planes personalizados (MED-PLAN-001) las actividades se cargan manualmente con `estado_id = pendiente` y `validado = NULL`.
   * Si se aplican plantillas estandarizadas, la **Library `CarePlanTemplate`** debía materializar cada regla en filas de `actividades`, copiando nombre/descripcion y asignando fechas relativas y vinculando el plan a `plan_estandar_id`.
 
 ---

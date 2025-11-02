@@ -30,7 +30,7 @@ El médico accede al **detalle** de un plan de cuidado personalizado (propio) de
 * Botón **Editar** → abre el formulario de planificación con datos **pre-cargados** para actualizar plan y actividades.
 * Edición de datos del plan: nombre (opcional), descripción (opcional), fecha de inicio y fin.
 * Gestión de actividades dentro de la edición: crear nuevas, actualizar existentes y eliminar actividades.
-* Reglas al editar actividades validadas: si se modifican, se restablece `validado = NULL/false` y `estado_id = sin_iniciar`.
+* Reglas al editar actividades validadas: si se modifican, se restablece `validado = NULL/false` y `estado_id = pendiente`.
 * Botón **Eliminar** → popup de confirmación estilizado con AdminLTE → baja **definitiva** con **cascada** de actividades.
 * Navegación de retorno al listado y al detalle desde el formulario de edición.
 
@@ -53,10 +53,10 @@ El médico accede al **detalle** de un plan de cuidado personalizado (propio) de
 
 * El médico está autenticado y el sistema conoce su `user_id`.
 * El plan existe y es **propiedad del médico**.
-* Catálogo `estado_actividad` vigente (`sin_iniciar`, `iniciada`, `terminada`).
+* Catálogo `estado_actividad` vigente (`pendiente`, `completada`, `vencida`).
 * Botón **Editar** reutiliza la **pantalla de creación** de plan personalizado con datos existentes (plan + actividades).
 * Botón **Eliminar** ejecuta baja definitiva con **eliminación en cascada** de actividades.
-* Catálogo `estado_actividad` vigente (`sin_iniciar`, `iniciada`, `terminada`).
+* Catálogo `estado_actividad` vigente (`pendiente`, `completada`, `vencida`).
 * Persistencia sin versionado: la edición actualiza el registro existente.
 
 ---
@@ -76,8 +76,8 @@ El médico accede al **detalle** de un plan de cuidado personalizado (propio) de
 4. En la edición, el médico puede:
 
    * Actualizar los datos del plan (nombre opcional, descripción opcional, fecha de inicio y fin).
-   * Agregar nuevas actividades (nombre, descripción, fechas) → se crean con estado `sin_iniciar` y `validado = NULL/false`.
-   * Editar actividades existentes. Si una actividad estaba validada y se modifica, el sistema restablece `validado = NULL/false` y `estado_id = sin_iniciar`.
+   * Agregar nuevas actividades (nombre, descripción, fechas) → se crean con estado `pendiente` y `validado = NULL/false`.
+   * Editar actividades existentes. Si una actividad estaba validada y se modifica, el sistema restablece `validado = NULL/false` y `estado_id = pendiente`.
    * Eliminar actividades del plan.
 5. Al guardar, el sistema valida los datos, persiste los cambios y muestra confirmación. Al cancelar, se regresa al detalle o listado sin modificar datos.
 6. En cualquier momento, el médico puede **volver** al listado desde los botones de navegación.
@@ -91,8 +91,8 @@ El médico accede al **detalle** de un plan de cuidado personalizado (propio) de
 * La visualización debe reflejar correctamente los **estados** y **validaciones** de actividades (`estado_id`, `validado`).
 * Durante la edición:
   * `fecha_inicio` ≤ `fecha_fin` en plan y actividades.
-  * Nuevas actividades se crean con `estado_id = sin_iniciar` y `validado = NULL/false`.
-  * Si una actividad validada se modifica, se restablece `validado = NULL/false` y `estado_id = sin_iniciar`.
+  * Nuevas actividades se crean con `estado_id = pendiente` y `validado = NULL/false`.
+  * Si una actividad validada se modifica, se restablece `validado = NULL/false` y `estado_id = pendiente`.
   * Solo se admiten actividades del propio plan.
 
 ---
@@ -104,8 +104,8 @@ El médico accede al **detalle** de un plan de cuidado personalizado (propio) de
 **CA-3.** La tabla de actividades incluye: nombre, descripción (truncada), inicio, fin, estado, validado.
 **CA-4.** El botón **Editar** abre el formulario con datos **pre-cargados** del plan y sus actividades, permitiendo agregar, modificar y eliminar actividades.
 **CA-5.** Fechas inválidas (plan o actividades) bloquean el guardado mostrando mensajes claros.
-**CA-6.** Al modificar una actividad previamente validada, su `validado` queda NULL/false y su `estado_id` pasa a `sin_iniciar`.
-**CA-7.** Nuevas actividades creadas al editar quedan con `estado_id = sin_iniciar` y `validado = NULL/false`.
+**CA-6.** Al modificar una actividad previamente validada, su `validado` queda NULL/false y su `estado_id` pasa a `pendiente`.
+**CA-7.** Nuevas actividades creadas al editar quedan con `estado_id = pendiente` y `validado = NULL/false`.
 **CA-8.** El botón **Eliminar** pide confirmación modal y, al aceptar, elimina el plan y sus actividades en cascada, mostrando mensaje de éxito y regresando al listado.
 **CA-9.** Si el plan no existe o es ajeno, se informa y se deniega acceso/retorna al listado.
 **CA-10.** Los botones de navegación permiten volver al listado o cancelar la edición sin cambios.
@@ -118,4 +118,3 @@ El médico accede al **detalle** de un plan de cuidado personalizado (propio) de
 * Plan sin actividades → mostrar **empty-state** (“Este plan aún no tiene actividades”).
 * Edición: eliminación de una actividad inexistente o ya eliminada → mensaje no bloqueante y refresco del listado.
 * Fallo de base de datos al guardar o eliminar → mensaje de error, no dejar datos inconsistentes.
-

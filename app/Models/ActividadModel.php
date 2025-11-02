@@ -20,6 +20,8 @@ class ActividadModel extends Model
         'fecha_fin',
         'estado_id',
         'validado',
+        'paciente_comentario',
+        'paciente_completada_en',
     ];
     protected $useTimestamps    = true;
     protected $createdField     = 'created_at';
@@ -50,6 +52,8 @@ class ActividadModel extends Model
                 'actividades.fecha_fin',
                 'actividades.estado_id',
                 'actividades.validado',
+                'actividades.paciente_comentario',
+                'actividades.paciente_completada_en',
                 'estado_actividad.nombre AS estado_nombre',
                 'estado_actividad.slug AS estado_slug',
             ])
