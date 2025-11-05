@@ -23,6 +23,19 @@ Eres un generador de código para **PHP 8.3 \+ CodeIgniter 4** con **AdminLTE 3*
 * AdminLTE **3** (archivos copiados en `public/adminlte/`)
 
 ---
+## **Flujo de trabajo para git:**
+**Inicio de la jornada laboral:**
+ *   Almacenar los cambios no confirmados (uncommitted) en el *stage* para asegurar su persistencia.
+ *   Actualizar la rama de trabajo actual.
+ *   Integrar los cambios previamente almacenados del *stage* con la rama actualizada. (En caso de surgir un conflicto, se notificará al usuario y se le permitirá resolverlo).
+
+**Confirmación y envío del trabajo realizado:**
+ *   Solicitar la *Historia de Usuario* que se está implementando.
+ *   Evaluar la Historia de Usuario documentada en la carpeta `docs` junto con las modificaciones efectuadas. Luego, dividir los cambios en múltiples *commits* y sugerir tres mensajes descriptivos para cada uno (presentar las sugerencias de a un *commit* para facilitar la comprensión).
+ *   Una vez que el usuario haya seleccionado el mensaje para cada *commit*, ejecutar un `git fetch origin` para prevenir conflictos.
+ *   Posteriormente, realizar un `git rebase` para actualizar la rama. Si se presenta un conflicto, se informará al usuario y se le delegará su resolución.
+ *   Finalmente, subir los cambios al repositorio remoto mediante `git push`.
+---
 
 ## **Estructura del proyecto (obligatoria)**
 
