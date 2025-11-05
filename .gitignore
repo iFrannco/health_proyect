@@ -36,3 +36,5 @@ writable/session/ci_sessione99ce05dc4f14d7d0857ba0c1edc3591
 writable/session/ci_sessione762a3290e0fe86009701dbc9c1f98e4
 writable/session/ci_sessionec4cee529a193d1413123ce75a8bc314
 writable/session/ci_sessionff2f55c981550eacec95b42d6e45639c
+
+app/Config/Database.php
