@@ -19,10 +19,10 @@
 
     <div class="card card-outline card-primary elevation-2">
         <div class="card-header text-center">
-            <span class="h5 mb-0">Iniciar sesión</span>
+            <span class="h5 mb-0" style="color: black;">¡Bienvenido/a!</span>
         </div>
         <div class="card-body">
-            <p class="login-box-msg text-muted">Use sus credenciales para acceder</p>
+            <p class="login-box-msg text-muted">Use sus credenciales para iniciar sesión.</p>
 
             <?php if (session()->getFlashdata('login_error')): ?>
                 <div class="alert alert-danger" role="alert">
