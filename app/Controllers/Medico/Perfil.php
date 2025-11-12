@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controllers\Paciente;
+namespace App\Controllers\Medico;
 
 use App\Controllers\BaseController;
 use App\Entities\User;
@@ -22,15 +22,15 @@ class Perfil extends BaseController
 
     public function index()
     {
-        $paciente = $this->obtenerPacienteActual();
+        $medico = $this->obtenerMedicoActual();
 
         return view('paciente/perfil/index', $this->layoutData() + [
             'title'          => 'Mi perfil',
-            'usuario'        => $paciente,
-            'rolLabel'       => 'Paciente',
+            'usuario'        => $medico,
+            'rolLabel'       => 'Médico',
             'formRoutes'     => [
-                'datos'    => route_to('paciente_perfil_actualizar_datos'),
-                'password' => route_to('paciente_perfil_actualizar_password'),
+                'datos'    => route_to('medico_perfil_actualizar_datos'),
+                'password' => route_to('medico_perfil_actualizar_password'),
             ],
             'errorsDatos'    => session()->getFlashdata('errors_datos') ?? [],
             'errorsPassword' => session()->getFlashdata('errors_password') ?? [],
@@ -39,12 +39,12 @@ class Perfil extends BaseController
 
     public function actualizarDatos()
     {
-        $paciente = $this->obtenerPacienteActual();
+        $medico = $this->obtenerMedicoActual();
 
         $rules = [
             'nombre'   => 'required|min_length[2]|max_length[120]',
             'apellido' => 'required|min_length[2]|max_length[120]',
-            'email'    => 'required|valid_email|max_length[180]|is_unique[users.email,id,' . (int) $paciente->id . ']',
+            'email'    => 'required|valid_email|max_length[180]|is_unique[users.email,id,' . (int) $medico->id . ']',
             'telefono' => 'permit_empty|max_length[50]',
             'fecha_nac'=> 'permit_empty|valid_date[Y-m-d]',
         ];
@@ -71,24 +71,24 @@ class Perfil extends BaseController
         ];
 
         try {
-            $pacienteActualizado = $this->perfilService->actualizarDatos((int) $paciente->id, $payload);
+            $medicoActualizado = $this->perfilService->actualizarDatos((int) $medico->id, $payload);
         } catch (\Throwable $exception) {
-            log_message('error', 'Error al actualizar perfil del paciente: {exception}', ['exception' => $exception]);
+            log_message('error', 'Error al actualizar perfil del médico: {exception}', ['exception' => $exception]);
 
             return redirect()->back()->withInput()->with('errors_datos', [
                 'general' => 'No se pudo actualizar el perfil. Inténtalo nuevamente.',
             ]);
         }
 
-        $this->actualizarSesion($pacienteActualizado);
+        $this->actualizarSesion($medicoActualizado);
         session()->setFlashdata('success', 'Perfil actualizado correctamente.');
 
-        return redirect()->route('paciente_perfil_index');
+        return redirect()->route('medico_perfil_index');
     }
 
     public function actualizarPassword()
     {
-        $paciente = $this->obtenerPacienteActual();
+        $medico = $this->obtenerMedicoActual();
 
         $rules = [
             'password_actual'       => 'required',
@@ -109,16 +109,16 @@ class Perfil extends BaseController
         $passwordActual = (string) $this->request->getPost('password_actual');
         $passwordNueva  = (string) $this->request->getPost('password_nueva');
 
-        if (! password_verify($passwordActual, (string) $paciente->password_hash)) {
+        if (! password_verify($passwordActual, (string) $medico->password_hash)) {
             return redirect()->back()->withInput()->with('errors_password', [
                 'password_actual' => 'La contraseña actual no es válida.',
             ]);
         }
 
         try {
-            $this->perfilService->actualizarPassword((int) $paciente->id, $passwordNueva);
+            $this->perfilService->actualizarPassword((int) $medico->id, $passwordNueva);
         } catch (\Throwable $exception) {
-            log_message('error', 'Error al actualizar contraseña del paciente: {exception}', ['exception' => $exception]);
+            log_message('error', 'Error al actualizar contraseña del médico: {exception}', ['exception' => $exception]);
 
             return redirect()->back()->withInput()->with('errors_password', [
                 'general' => 'No se pudo actualizar la contraseña. Inténtalo nuevamente.',
@@ -127,7 +127,7 @@ class Perfil extends BaseController
 
         session()->setFlashdata('success', 'Contraseña actualizada correctamente.');
 
-        return redirect()->route('paciente_perfil_index');
+        return redirect()->route('medico_perfil_index');
     }
 
     private function normalizarFecha($fecha): ?string
@@ -150,25 +150,26 @@ class Perfil extends BaseController
         ]);
     }
 
-    private function obtenerPacienteActual(): User
+    private function obtenerMedicoActual(): User
     {
         $session = session();
         $userId  = $session->get('user_id');
 
         if ($userId !== null) {
-            $paciente = $this->userModel->findActivoPorRol((int) $userId, UserModel::ROLE_PACIENTE);
-            if ($paciente instanceof User) {
-                return $paciente;
+            $medico = $this->userModel->findActivoPorRol((int) $userId, UserModel::ROLE_MEDICO);
+            if ($medico instanceof User) {
+                return $medico;
             }
         }
 
-        $paciente = $this->userModel->findPrimeroActivoPorRol(UserModel::ROLE_PACIENTE);
-        if ($paciente === null) {
-            throw new PageNotFoundException('No existen pacientes activos configurados.');
+        $medico = $this->userModel->findPrimeroActivoPorRol(UserModel::ROLE_MEDICO);
+        if ($medico === null) {
+            throw new PageNotFoundException('No existen médicos activos configurados.');
         }
 
-        $session->set('user_id', $paciente->id);
+        $session->set('user_id', $medico->id);
 
-        return $paciente;
+        return $medico;
     }
 }
+

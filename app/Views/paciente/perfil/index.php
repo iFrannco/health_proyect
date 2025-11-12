@@ -2,21 +2,23 @@
 
 <?= $this->section('content') ?>
 <?php
-/** @var App\Entities\User|null $paciente */
-$paciente        = $paciente ?? null;
+/** @var App\Entities\User|null $usuario */
+$usuario        = $usuario ?? null;
 $errorsDatos     = $errorsDatos ?? [];
 $errorsPassword  = $errorsPassword ?? [];
+$rolLabel        = $rolLabel ?? 'Usuario';
+$formRoutes      = $formRoutes ?? ['datos' => '#', 'password' => '#'];
 $nombreCompleto  = '';
 
-if ($paciente !== null) {
-    $nombreCompleto = trim((string) ($paciente->nombre ?? '') . ' ' . ((string) ($paciente->apellido ?? '')));
+if ($usuario !== null) {
+    $nombreCompleto = trim((string) ($usuario->nombre ?? '') . ' ' . ((string) ($usuario->apellido ?? '')));
 }
 
 $fechaNac = '';
-if ($paciente !== null && ! empty($paciente->fecha_nac)) {
-    $fechaNac = $paciente->fecha_nac instanceof \DateTimeInterface
-        ? $paciente->fecha_nac->format('Y-m-d')
-        : (string) $paciente->fecha_nac;
+if ($usuario !== null && ! empty($usuario->fecha_nac)) {
+    $fechaNac = $usuario->fecha_nac instanceof \DateTimeInterface
+        ? $usuario->fecha_nac->format('Y-m-d')
+        : (string) $usuario->fecha_nac;
 }
 
 $oldFechaNac = old('fecha_nac', $fechaNac);
@@ -33,7 +35,7 @@ $errorDato = static function (array $errors, string $campo): ?string {
     </div>
     <div class="col-auto text-right">
         <span class="badge badge-primary py-2 px-3">
-            <i class="fas fa-user mr-1"></i> <?= esc($nombreCompleto ?: 'Paciente') ?>
+            <i class="fas fa-user mr-1"></i> <?= esc($nombreCompleto ?: $rolLabel) ?>
         </span>
     </div>
 </div>
@@ -49,14 +51,14 @@ $errorDato = static function (array $errors, string $campo): ?string {
                 </h3>
             </div>
             <div class="card-body">
-                <form action="<?= route_to('paciente_perfil_actualizar_datos') ?>" method="post" novalidate>
+                <form action="<?= esc($formRoutes['datos'] ?? '#') ?>" method="post" novalidate>
                     <?= csrf_field() ?>
 
                     <div class="form-row">
                         <div class="form-group col-md-6">
                             <label for="nombre">Nombre *</label>
                             <input type="text" id="nombre" name="nombre" class="form-control<?= $errorDato($errorsDatos, 'nombre') ? ' is-invalid' : '' ?>"
-                                   value="<?= esc(old('nombre', $paciente->nombre ?? '')) ?>" maxlength="120" required>
+                                   value="<?= esc(old('nombre', $usuario->nombre ?? '')) ?>" maxlength="120" required>
                             <?php if ($errorDato($errorsDatos, 'nombre')): ?>
                                 <div class="invalid-feedback"><?= esc($errorDato($errorsDatos, 'nombre')) ?></div>
                             <?php endif; ?>
@@ -64,7 +66,7 @@ $errorDato = static function (array $errors, string $campo): ?string {
                         <div class="form-group col-md-6">
                             <label for="apellido">Apellido *</label>
                             <input type="text" id="apellido" name="apellido" class="form-control<?= $errorDato($errorsDatos, 'apellido') ? ' is-invalid' : '' ?>"
-                                   value="<?= esc(old('apellido', $paciente->apellido ?? '')) ?>" maxlength="120" required>
+                                   value="<?= esc(old('apellido', $usuario->apellido ?? '')) ?>" maxlength="120" required>
                             <?php if ($errorDato($errorsDatos, 'apellido')): ?>
                                 <div class="invalid-feedback"><?= esc($errorDato($errorsDatos, 'apellido')) ?></div>
                             <?php endif; ?>
@@ -75,7 +77,7 @@ $errorDato = static function (array $errors, string $campo): ?string {
                         <div class="form-group col-md-6">
                             <label for="email">Email *</label>
                             <input type="email" id="email" name="email" class="form-control<?= $errorDato($errorsDatos, 'email') ? ' is-invalid' : '' ?>"
-                                   value="<?= esc(old('email', $paciente->email ?? '')) ?>" maxlength="180" required>
+                                   value="<?= esc(old('email', $usuario->email ?? '')) ?>" maxlength="180" required>
                             <?php if ($errorDato($errorsDatos, 'email')): ?>
                                 <div class="invalid-feedback"><?= esc($errorDato($errorsDatos, 'email')) ?></div>
                             <?php endif; ?>
@@ -83,7 +85,7 @@ $errorDato = static function (array $errors, string $campo): ?string {
                         <div class="form-group col-md-6">
                             <label for="telefono">Teléfono</label>
                             <input type="text" id="telefono" name="telefono" class="form-control<?= $errorDato($errorsDatos, 'telefono') ? ' is-invalid' : '' ?>"
-                                   value="<?= esc(old('telefono', $paciente->telefono ?? '')) ?>" maxlength="50" placeholder="Ej: +54 11 5555-1234">
+                                   value="<?= esc(old('telefono', $usuario->telefono ?? '')) ?>" maxlength="50" placeholder="Ej: +54 11 5555-1234">
                             <?php if ($errorDato($errorsDatos, 'telefono')): ?>
                                 <div class="invalid-feedback"><?= esc($errorDato($errorsDatos, 'telefono')) ?></div>
                             <?php endif; ?>
@@ -120,7 +122,7 @@ $errorDato = static function (array $errors, string $campo): ?string {
                 </h3>
             </div>
             <div class="card-body">
-                <form action="<?= route_to('paciente_perfil_actualizar_password') ?>" method="post" novalidate>
+                <form action="<?= esc($formRoutes['password'] ?? '#') ?>" method="post" novalidate>
                     <?= csrf_field() ?>
 
                     <div class="form-group">

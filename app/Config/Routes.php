@@ -45,4 +45,7 @@ $routes->group('medico', ['filter' => 'auth'], function ($routes) {
     $routes->delete('planes/(:num)', 'Medico\Planes::delete/$1', ['as' => 'medico_planes_delete']);
     $routes->post('planes/actividades/(:num)/validar', 'Medico\Planes::validarActividad/$1', ['as' => 'medico_planes_actividad_validar']);
     $routes->post('planes/actividades/(:num)/desvalidar', 'Medico\Planes::desvalidarActividad/$1', ['as' => 'medico_planes_actividad_desvalidar']);
+    $routes->get('perfil', 'Medico\Perfil::index', ['as' => 'medico_perfil_index']);
+    $routes->post('perfil/datos', 'Medico\Perfil::actualizarDatos', ['as' => 'medico_perfil_actualizar_datos']);
+    $routes->post('perfil/password', 'Medico\Perfil::actualizarPassword', ['as' => 'medico_perfil_actualizar_password']);
 });

@@ -8,7 +8,7 @@ use App\Entities\User;
 use App\Models\UserModel;
 use RuntimeException;
 
-class PacientePerfilService
+class PerfilUsuarioService
 {
     private UserModel $userModel;
 
@@ -52,4 +52,3 @@ class PacientePerfilService
         ]);
     }
 }
-
