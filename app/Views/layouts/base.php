@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="<?= base_url('assets/css/layout.css'); ?>">
     <?= $this->renderSection('styles') ?>
 </head>
-<body class="hold-transition sidebar-mini layout-fixed">
+<body class="hold-transition sidebar-mini layout-fixed accent-primary">
 <script>
 (function () {
     try {

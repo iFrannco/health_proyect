@@ -4,7 +4,7 @@ body {
     font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.layout-navbar {
+.navbar-light.layout-navbar {
     background-color: #ffffff;
     border-bottom: 1px solid #e4e6ef;
     min-height: 64px;
@@ -72,7 +72,9 @@ body {
     line-height: 1.1;
 }
 
-.layout-sidebar {
+/* Para sidebars claras seguimos usando fondo claro */
+.sidebar-light-primary.layout-sidebar,
+.sidebar-light.layout-sidebar {
     background: #f8f9fa;
 }
 
@@ -145,6 +147,42 @@ body {
     font-size: 0.875rem;
     font-weight: 500;
     color: #4a4a4a;
+}
+
+/* Estilos para variantes oscuras (sidebar-dark-primary) usando AdminLTE */
+.sidebar-dark-primary.layout-sidebar {
+    background: #1a73e8; /* Dejar que AdminLTE maneje, este es fallback */
+}
+.sidebar-dark-primary .layout-sidebar-brand {
+    background: transparent;
+    border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+.sidebar-dark-primary .layout-sidebar-brand .brand-text {
+    color: #ffffff;
+}
+.sidebar-dark-primary .layout-sidebar-nav .nav-link {
+    color: #e9ecef;
+}
+.sidebar-dark-primary .layout-sidebar-nav .nav-link .nav-icon {
+    color: #f8f9fa;
+}
+.sidebar-dark-primary .layout-sidebar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+.sidebar-dark-primary .layout-sidebar-nav .nav-link.active {
+    background-color: rgba(0, 0, 0, 0.2);
+    color: #ffffff;
+}
+
+/* Navbar oscuro/primario: no sobreescribir colores por defecto de AdminLTE */
+.navbar-dark.layout-navbar .nav-link,
+.navbar-dark.layout-navbar .layout-nav-right-label {
+    color: rgba(255, 255, 255, 0.85);
+}
+.navbar-dark.layout-navbar .nav-link:hover,
+.navbar-dark.layout-navbar .nav-item.active .nav-link {
+    color: #ffffff;
 }
 
 @media (max-width: 768px) {

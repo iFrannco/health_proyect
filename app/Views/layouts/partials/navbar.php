@@ -2,7 +2,7 @@
 $userItems = $userItems ?? [];
 ?>
 
-<nav class="main-header navbar navbar-expand navbar-light layout-navbar shadow-sm">
+<nav class="main-header navbar navbar-expand navbar-dark navbar-primary layout-navbar shadow-sm">
     <div class="container-fluid">
         <ul class="navbar-nav align-items-center layout-nav-left">
             <li class="nav-item">
@@ -17,7 +17,7 @@ $userItems = $userItems ?? [];
             <?php foreach ($userItems as $item): ?>
                 <?php $iconClass = $item['icon'] ?? 'fas fa-circle'; ?>
                 <li class="nav-item<?= !empty($item['active']) ? ' active' : '' ?>">
-                    <a class="nav-link" href="<?= esc($item['url'] ?? '#') ?>">
+                    <a class="nav-link text-white" href="<?= esc($item['url'] ?? '#') ?>">
                         <i class="layout-nav-right-icon <?= esc($iconClass, 'attr') ?>" aria-hidden="true"></i>
                         <span class="layout-nav-right-label"><?= esc($item['label'] ?? '') ?></span>
                     </a>

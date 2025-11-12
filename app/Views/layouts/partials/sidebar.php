@@ -4,9 +4,10 @@ $brand = $brand ?? 'HealthPro';
 $brandUrl = $brandUrl ?? base_url('/');
 ?>
 
-<aside class="main-sidebar sidebar-light-primary sidebar-no-expand elevation-3 layout-sidebar">
-    <a href="<?= esc($brandUrl) ?>" class="brand-link layout-sidebar-brand">
-        <span class="brand-text font-weight-semibold"><?= esc($brand) ?></span>
+<aside class="main-sidebar sidebar-light-primary elevation-3 layout-sidebar">
+    <a href="<?= esc($brandUrl) ?>" class="brand-link layout-sidebar-brand bg-primary">
+        <i class="nav-icon fas fa-heartbeat text-white mr-2" aria-hidden="true"></i>
+        <span class="brand-text font-weight-semibold text-white"><?= esc($brand) ?></span>
     </a>
 
     <div class="sidebar">
