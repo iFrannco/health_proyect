@@ -28,7 +28,7 @@ class Database extends Config
         'DSN'          => '',
         'hostname'     => 'localhost',
         'username'     => 'root',
-        'password'     => '1818',
+        'password'     => '',
         'database'     => 'health_proyect',
         'DBDriver'     => 'MySQLi',
         'DBPrefix'     => '',

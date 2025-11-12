@@ -5,13 +5,20 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', 'Home::index');
+$routes->get('/', 'Auth\\Login::index');
 
-$routes->group('admin', function ($routes) {
+// Autenticación
+$routes->group('auth', function ($routes) {
+    $routes->get('login', 'Auth\Login::index', ['as' => 'auth_login']);
+    $routes->post('login', 'Auth\Login::autenticar', ['as' => 'auth_login_post']);
+    $routes->get('logout', 'Auth\Logout::index', ['as' => 'auth_logout']);
+});
+
+$routes->group('admin', ['filter' => 'auth'], function ($routes) {
     $routes->get('home', 'Admin\Home::index');
 });
 
-$routes->group('paciente', function ($routes) {
+$routes->group('paciente', ['filter' => 'auth'], function ($routes) {
     $routes->get('home', 'Paciente\Home::index');
     $routes->get('home/resumen', 'Paciente\Home::resumen', ['as' => 'paciente_dashboard_resumen']);
     $routes->get('planes', 'Paciente\Planes::index', ['as' => 'paciente_planes_index']);
@@ -20,7 +27,7 @@ $routes->group('paciente', function ($routes) {
     $routes->post('planes/actividades/(:num)/desmarcar', 'Paciente\Planes::desmarcarActividad/$1', ['as' => 'paciente_planes_actividad_desmarcar']);
 });
 
-$routes->group('medico', function ($routes) {
+$routes->group('medico', ['filter' => 'auth'], function ($routes) {
     $routes->get('home', 'Medico\Home::index');
     $routes->get('pacientes', 'Medico\Pacientes::index', ['as' => 'medico_pacientes_index']);
     $routes->get('diagnosticos', 'Medico\Diagnosticos::index', ['as' => 'medico_diagnosticos_index']);
