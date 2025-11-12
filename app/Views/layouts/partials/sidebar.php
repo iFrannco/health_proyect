@@ -6,8 +6,10 @@ $brandUrl = $brandUrl ?? base_url('/');
 
 <aside class="main-sidebar sidebar-light-primary elevation-3 layout-sidebar">
     <a href="<?= esc($brandUrl) ?>" class="brand-link layout-sidebar-brand bg-primary">
-        <i class="nav-icon fas fa-heartbeat text-white mr-2" aria-hidden="true"></i>
-        <span class="brand-text font-weight-semibold text-white"><?= esc($brand) ?></span>
+        <span class="brand-image elevation-2">
+            <i class="nav-icon fas fa-heartbeat text-white" aria-hidden="true"></i>
+        </span>
+        <span class="brand-text font-weight-semibold text-white ml-2"><?= esc($brand) ?></span>
     </a>
 
     <div class="sidebar">

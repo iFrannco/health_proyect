@@ -25,6 +25,9 @@ $routes->group('paciente', ['filter' => 'auth'], function ($routes) {
     $routes->get('planes/(:num)', 'Paciente\Planes::show/$1', ['as' => 'paciente_planes_show']);
     $routes->post('planes/actividades/(:num)/marcar', 'Paciente\Planes::marcarActividad/$1', ['as' => 'paciente_planes_actividad_marcar']);
     $routes->post('planes/actividades/(:num)/desmarcar', 'Paciente\Planes::desmarcarActividad/$1', ['as' => 'paciente_planes_actividad_desmarcar']);
+    $routes->get('perfil', 'Paciente\Perfil::index', ['as' => 'paciente_perfil_index']);
+    $routes->post('perfil/datos', 'Paciente\Perfil::actualizarDatos', ['as' => 'paciente_perfil_actualizar_datos']);
+    $routes->post('perfil/password', 'Paciente\Perfil::actualizarPassword', ['as' => 'paciente_perfil_actualizar_password']);
 });
 
 $routes->group('medico', ['filter' => 'auth'], function ($routes) {
