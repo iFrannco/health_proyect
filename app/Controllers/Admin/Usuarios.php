@@ -3,7 +3,9 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
+use App\Entities\User;
 use App\Models\UserModel;
+use App\Services\PerfilUsuarioService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
 class Usuarios extends BaseController
@@ -25,6 +27,8 @@ class Usuarios extends BaseController
 
     private UserModel $userModel;
 
+    private PerfilUsuarioService $perfilService;
+
     /**
      * @var array<string, array{nombre: string, id: int}>
      */
@@ -32,7 +36,8 @@ class Usuarios extends BaseController
 
     public function __construct()
     {
-        $this->userModel = new UserModel();
+        $this->userModel     = new UserModel();
+        $this->perfilService = new PerfilUsuarioService($this->userModel);
     }
 
     public function index()
@@ -155,6 +160,169 @@ class Usuarios extends BaseController
         return redirect()->route('admin_usuarios_index');
     }
 
+    public function edit(int $usuarioId)
+    {
+        $usuario = $this->obtenerUsuarioConRol($usuarioId);
+
+        $nombreCompleto = trim((string) ($usuario->nombre ?? '') . ' ' . ((string) ($usuario->apellido ?? '')));
+        $tituloPerfil   = $nombreCompleto !== '' ? 'Perfil de ' . $nombreCompleto : 'Perfil del usuario';
+        $rolNombre      = (string) ($usuario->rol_nombre ?? ucfirst((string) ($usuario->rol_slug ?? 'Usuario')));
+        $estaActivo     = (bool) ($usuario->activo ?? false);
+
+        $viewData = $this->layoutData() + [
+            'title'               => 'Gestión de usuario',
+            'usuario'             => $usuario,
+            'rolLabel'            => $rolNombre . ' · ' . ($estaActivo ? 'Activo' : 'Inactivo'),
+            'perfilTitulo'        => $tituloPerfil,
+            'perfilDescripcion'   => 'Actualizá los datos personales o gestioná el acceso de este usuario.',
+            'volverUrl'           => route_to('admin_usuarios_index'),
+            'formRoutes'          => [
+                'datos'    => route_to('admin_usuarios_update', $usuarioId),
+                'password' => '#',
+            ],
+            'mostrarPasswordForm' => false,
+            'adminActions'        => [
+                'enabled'             => true,
+                'estadoActual'        => $estaActivo,
+                'estadoRoute'         => route_to('admin_usuarios_toggle_estado', $usuarioId),
+                'resetPasswordRoute'  => route_to('admin_usuarios_reset_password', $usuarioId),
+                'resetPasswordConfirm'=> '¿Deseás generar una nueva contraseña temporal para este usuario?',
+            ],
+            'errorsDatos'         => session()->getFlashdata('errors_datos') ?? [],
+            'errorsPassword'      => [],
+        ];
+
+        return view('paciente/perfil/index', $viewData);
+    }
+
+    public function update(int $usuarioId)
+    {
+        $usuario = $this->obtenerUsuarioConRol($usuarioId);
+        $usuarioId = (int) $usuario->id;
+
+        $rules = [
+            'nombre'   => 'required|min_length[2]|max_length[120]',
+            'apellido' => 'required|min_length[2]|max_length[120]',
+            'dni'      => 'required|min_length[6]|max_length[20]|is_unique[users.dni,id,' . $usuarioId . ']',
+            'email'    => 'required|valid_email|max_length[180]|is_unique[users.email,id,' . $usuarioId . ']',
+            'telefono' => 'permit_empty|max_length[50]',
+            'fecha_nac'=> 'permit_empty|valid_date[Y-m-d]',
+        ];
+
+        $messages = [
+            'dni' => [
+                'is_unique' => 'El DNI ya está registrado por otro usuario.',
+            ],
+            'email' => [
+                'is_unique' => 'El email ya está registrado por otro usuario.',
+            ],
+            'fecha_nac' => [
+                'valid_date' => 'La fecha de nacimiento debe tener el formato YYYY-MM-DD.',
+            ],
+        ];
+
+        if (! $this->validate($rules, $messages)) {
+            return redirect()->back()->withInput()->with('errors_datos', $this->validator->getErrors());
+        }
+
+        $payload = [
+            'nombre'    => trim((string) $this->request->getPost('nombre')),
+            'apellido'  => trim((string) $this->request->getPost('apellido')),
+            'dni'       => trim((string) $this->request->getPost('dni')),
+            'email'     => trim((string) $this->request->getPost('email')),
+            'telefono'  => $this->normalizarTelefono($this->request->getPost('telefono')),
+            'fecha_nac' => $this->normalizarFecha($this->request->getPost('fecha_nac')),
+        ];
+
+        try {
+            $this->perfilService->actualizarDatos($usuarioId, $payload);
+        } catch (\Throwable $exception) {
+            log_message('error', 'Error al actualizar usuario desde admin: {exception}', ['exception' => $exception]);
+
+            return redirect()->back()->withInput()->with('errors_datos', [
+                'general' => 'No se pudieron guardar los cambios. Inténtalo nuevamente.',
+            ]);
+        }
+
+        session()->setFlashdata('success', 'Datos del usuario actualizados correctamente.');
+
+        return redirect()->route('admin_usuarios_edit', [$usuarioId]);
+    }
+
+    public function resetPassword(int $usuarioId)
+    {
+        $usuario = $this->obtenerUsuarioConRol($usuarioId);
+        $usuarioId = (int) $usuario->id;
+
+        $passwordTemporal = $this->generarPasswordTemporal();
+
+        try {
+            $this->perfilService->actualizarPassword($usuarioId, $passwordTemporal);
+        } catch (\Throwable $exception) {
+            log_message('error', 'Error al resetear contraseña de usuario {id}: {exception}', [
+                'id'         => $usuarioId,
+                'exception'  => $exception,
+            ]);
+
+            session()->setFlashdata('error', 'No se pudo resetear la contraseña. Inténtalo nuevamente.');
+
+            return redirect()->route('admin_usuarios_edit', [$usuarioId]);
+        }
+
+        session()->setFlashdata('success', 'Contraseña reseteada correctamente.');
+        session()->setFlashdata('info', 'Nueva contraseña temporal: ' . $passwordTemporal);
+
+        return redirect()->route('admin_usuarios_edit', [$usuarioId]);
+    }
+
+    public function cambiarEstado(int $usuarioId)
+    {
+        $usuario = $this->obtenerUsuarioConRol($usuarioId);
+
+        $accion = strtolower(trim((string) $this->request->getPost('accion')));
+        if (! in_array($accion, ['desactivar', 'reactivar'], true)) {
+            session()->setFlashdata('error', 'Acción no válida.');
+
+            return redirect()->route('admin_usuarios_edit', [$usuarioId]);
+        }
+
+        $estaActivo = (bool) ($usuario->activo ?? false);
+
+        if ($accion === 'desactivar' && ! $estaActivo) {
+            session()->setFlashdata('info', 'El usuario ya se encuentra inactivo.');
+
+            return redirect()->route('admin_usuarios_edit', [$usuarioId]);
+        }
+
+        if ($accion === 'reactivar' && $estaActivo) {
+            session()->setFlashdata('info', 'El usuario ya está activo.');
+
+            return redirect()->route('admin_usuarios_edit', [$usuarioId]);
+        }
+
+        $nuevoEstado = $accion === 'reactivar' ? 1 : 0;
+        $mensaje     = $accion === 'reactivar'
+            ? 'Usuario reactivado correctamente.'
+            : 'Usuario desactivado correctamente.';
+
+        try {
+            $this->userModel->update((int) $usuario->id, ['activo' => $nuevoEstado]);
+        } catch (\Throwable $exception) {
+            log_message('error', 'Error al cambiar estado del usuario {id}: {exception}', [
+                'id'        => (int) $usuario->id,
+                'exception' => $exception,
+            ]);
+
+            session()->setFlashdata('error', 'No se pudo actualizar el estado del usuario.');
+
+            return redirect()->route('admin_usuarios_edit', [$usuarioId]);
+        }
+
+        session()->setFlashdata('success', $mensaje);
+
+        return redirect()->route('admin_usuarios_edit', [$usuarioId]);
+    }
+
     private function normalizarRole(mixed $valor): string
     {
         $valorNormalizado = strtolower(trim((string) $valor));
@@ -249,5 +417,27 @@ class Usuarios extends BaseController
         $telefono = trim((string) ($valor ?? ''));
 
         return $telefono === '' ? null : $telefono;
+    }
+
+    private function obtenerUsuarioConRol(int $usuarioId): User
+    {
+        $usuario = $this->userModel
+            ->select('users.*, roles.slug AS rol_slug, roles.nombre AS rol_nombre')
+            ->join('roles', 'roles.id = users.role_id', 'inner')
+            ->where('users.id', $usuarioId)
+            ->first();
+
+        if (! $usuario instanceof User) {
+            throw new PageNotFoundException('El usuario solicitado no existe.');
+        }
+
+        return $usuario;
+    }
+
+    private function generarPasswordTemporal(int $length = 12): string
+    {
+        $raw = bin2hex(random_bytes(max(4, $length)));
+
+        return substr($raw, 0, $length);
     }
 }

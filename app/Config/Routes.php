@@ -19,6 +19,10 @@ $routes->group('admin', ['filter' => 'auth'], function ($routes) {
     $routes->get('usuarios', 'Admin\Usuarios::index', ['as' => 'admin_usuarios_index']);
     $routes->get('usuarios/nuevo', 'Admin\Usuarios::create', ['as' => 'admin_usuarios_create']);
     $routes->post('usuarios', 'Admin\Usuarios::store', ['as' => 'admin_usuarios_store']);
+    $routes->get('usuarios/(:num)/editar', 'Admin\Usuarios::edit/$1', ['as' => 'admin_usuarios_edit']);
+    $routes->post('usuarios/(:num)/actualizar', 'Admin\Usuarios::update/$1', ['as' => 'admin_usuarios_update']);
+    $routes->post('usuarios/(:num)/reset-password', 'Admin\Usuarios::resetPassword/$1', ['as' => 'admin_usuarios_reset_password']);
+    $routes->post('usuarios/(:num)/estado', 'Admin\Usuarios::cambiarEstado/$1', ['as' => 'admin_usuarios_toggle_estado']);
 });
 
 $routes->group('paciente', ['filter' => 'auth'], function ($routes) {
