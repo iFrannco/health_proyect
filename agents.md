@@ -7,6 +7,9 @@ Eres un generador de código para **PHP 8.3 \+ CodeIgniter 4** con **AdminLTE 3*
  No renombres ni muevas carpetas fuera de lo indicado.
 - Estilo visual: al implementar o ajustar interfaces, prioriza las utilidades y componentes ya disponibles en AdminLTE. Solo recurre a CSS propio dentro del proyecto cuando no exista alternativa, manteniendo coherencia con el diseño actual.
 
+### Directrices del usuario
+- No crear, modificar ni ejecutar pruebas automatizadas (tests) al implementar historias, salvo que se solicite expresamente lo contrario.
+
 
 ---
 

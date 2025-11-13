@@ -7,6 +7,7 @@ use CodeIgniter\Model;
 
 class UserModel extends Model
 {
+    public const ROLE_ADMIN    = 'admin';
     public const ROLE_MEDICO   = 'medico';
     public const ROLE_PACIENTE = 'paciente';
 
@@ -120,6 +121,62 @@ class UserModel extends Model
                 ->groupStart()
                     ->like('users.nombre', $termino, 'both', null, true)
                     ->orLike('users.apellido', $termino, 'both', null, true)
+                ->groupEnd();
+        }
+
+        return $builder->paginate($perPage, $pagerGroup);
+    }
+
+    /**
+     * Devuelve un listado paginado de usuarios para el módulo de administración.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function paginateUsuarios(
+        ?string $busqueda,
+        ?string $roleSlug,
+        bool $soloActivos = true,
+        int $perPage = 10,
+        string $pagerGroup = 'default'
+    ): array {
+        $columnas = [
+            'users.id',
+            'users.nombre',
+            'users.apellido',
+            'users.email',
+            'users.telefono',
+            'users.activo',
+            'roles.slug AS rol',
+            'roles.nombre AS rol_nombre',
+        ];
+
+        $camposDisponibles = $this->db->getFieldNames($this->table);
+        if (in_array('dni', $camposDisponibles, true)) {
+            $columnas[] = 'users.dni';
+        }
+
+        $builder = $this->select($columnas)
+            ->join('roles', 'roles.id = users.role_id', 'inner')
+            ->orderBy('users.apellido', 'ASC')
+            ->orderBy('users.nombre', 'ASC')
+            ->asArray();
+
+        if ($soloActivos) {
+            $builder->where('users.activo', 1);
+        }
+
+        $rolNormalizado = trim(strtolower((string) $roleSlug));
+        if ($rolNormalizado !== '' && $rolNormalizado !== 'todos') {
+            $builder->where('roles.slug', $rolNormalizado);
+        }
+
+        $termino = trim((string) $busqueda);
+        if ($termino !== '') {
+            $builder
+                ->groupStart()
+                    ->like('users.nombre', $termino, 'both', null, true)
+                    ->orLike('users.apellido', $termino, 'both', null, true)
+                    ->orLike('users.email', $termino, 'both', null, true)
                 ->groupEnd();
         }
 

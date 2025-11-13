@@ -18,16 +18,27 @@ class UserSeeder extends Seeder
             $rolesBySlug[$role['slug']] = (int) $role['id'];
         }
 
+        $adminRoleId    = $rolesBySlug['admin'] ?? null;
         $medicoRoleId   = $rolesBySlug['medico'] ?? null;
         $pacienteRoleId = $rolesBySlug['paciente'] ?? null;
 
-        if (! $medicoRoleId || ! $pacienteRoleId) {
+        if (! $adminRoleId || ! $medicoRoleId || ! $pacienteRoleId) {
             throw new \RuntimeException('Los roles basicos no estan disponibles para el seeding de usuarios.');
         }
 
         $now = date('Y-m-d H:i:s');
 
         $usuarios = [
+            [
+                'nombre'    => 'Rocio',
+                'apellido'  => 'Fernandez',
+                'email'     => 'admin@healthpro.test',
+                'password'  => 'Admin123!',
+                'role_id'   => $adminRoleId,
+                'activo'    => 1,
+                'fecha_nac' => '1982-01-15',
+                'telefono'  => '+54-11-5555-0999',
+            ],
             [
                 'nombre'    => 'Ana',
                 'apellido'  => 'Medina',

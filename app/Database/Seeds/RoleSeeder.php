@@ -19,6 +19,11 @@ class RoleSeeder extends Seeder
                 'nombre' => 'Paciente',
                 'slug'   => 'paciente',
             ],
+            [
+                'id'     => 3,
+                'nombre' => 'Administrador',
+                'slug'   => 'admin',
+            ],
         ];
 
         $now = date('Y-m-d H:i:s');

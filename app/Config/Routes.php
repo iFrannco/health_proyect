@@ -16,6 +16,7 @@ $routes->group('auth', function ($routes) {
 
 $routes->group('admin', ['filter' => 'auth'], function ($routes) {
     $routes->get('home', 'Admin\Home::index');
+    $routes->get('usuarios', 'Admin\Usuarios::index', ['as' => 'admin_usuarios_index']);
 });
 
 $routes->group('paciente', ['filter' => 'auth'], function ($routes) {
