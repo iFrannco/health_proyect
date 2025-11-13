@@ -18,6 +18,11 @@ $pagerGroup = $pagerGroup ?? 'admin_usuarios';
                     Administra los usuarios del sistema con filtros por rol y buscador de texto.
                 </p>
             </div>
+            <div class="mt-3 mt-md-0">
+                <a href="<?= route_to('admin_usuarios_create') ?>" class="btn btn-success">
+                    <i class="fas fa-user-plus mr-1"></i> Nuevo usuario
+                </a>
+            </div>
         </div>
 
         <?= view('layouts/partials/alerts') ?>
