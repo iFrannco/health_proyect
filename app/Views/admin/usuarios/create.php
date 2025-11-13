@@ -74,6 +74,28 @@ $oldRol      = old('rol');
 
                     <div class="form-row">
                         <div class="form-group col-md-6">
+                            <label for="dni">DNI</label>
+                            <input
+                                type="text"
+                                id="dni"
+                                name="dni"
+                                value="<?= esc(old('dni')) ?>"
+                                class="form-control<?= isset($errorList['dni']) ? ' is-invalid' : '' ?>"
+                                maxlength="20"
+                                minlength="6"
+                                required
+                                placeholder="Ej: 25.123.456"
+                            >
+                            <?php if (isset($errorList['dni'])): ?>
+                                <span class="invalid-feedback d-block">
+                                    <?= esc($errorList['dni']) ?>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
                             <label for="fecha_nac">Fecha de nacimiento</label>
                             <input
                                 type="date"

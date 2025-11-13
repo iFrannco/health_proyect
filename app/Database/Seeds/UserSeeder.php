@@ -171,6 +171,12 @@ class UserSeeder extends Seeder
             ],
         ];
 
+        $dniSecuencia = 20000001;
+        foreach ($usuarios as &$usuario) {
+            $usuario['dni'] = (string) ($dniSecuencia++);
+        }
+        unset($usuario);
+
         foreach ($usuarios as $usuario) {
             $usuarioExistente = $this->db->table('users')
                 ->where('email', $usuario['email'])
@@ -180,6 +186,7 @@ class UserSeeder extends Seeder
             $payload = [
                 'nombre'        => $usuario['nombre'],
                 'apellido'      => $usuario['apellido'],
+                'dni'           => $usuario['dni'],
                 'email'         => $usuario['email'],
                 'password_hash' => password_hash($usuario['password'], PASSWORD_BCRYPT),
                 'role_id'       => $usuario['role_id'],

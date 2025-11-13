@@ -33,7 +33,7 @@ class PerfilUsuarioService
      */
     public function actualizarDatos(int $userId, array $datos): User
     {
-        $camposPermitidos = ['nombre', 'apellido', 'email', 'telefono', 'fecha_nac'];
+        $camposPermitidos = ['nombre', 'apellido', 'dni', 'email', 'telefono', 'fecha_nac'];
         $payload          = array_intersect_key($datos, array_flip($camposPermitidos));
 
         if ($payload !== []) {

@@ -75,6 +75,14 @@ $errorDato = static function (array $errors, string $campo): ?string {
 
                     <div class="form-row">
                         <div class="form-group col-md-6">
+                            <label for="dni">DNI *</label>
+                            <input type="text" id="dni" name="dni" class="form-control<?= $errorDato($errorsDatos, 'dni') ? ' is-invalid' : '' ?>"
+                                   value="<?= esc(old('dni', $usuario->dni ?? '')) ?>" maxlength="20" minlength="6" required>
+                            <?php if ($errorDato($errorsDatos, 'dni')): ?>
+                                <div class="invalid-feedback"><?= esc($errorDato($errorsDatos, 'dni')) ?></div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="form-group col-md-6">
                             <label for="email">Email *</label>
                             <input type="email" id="email" name="email" class="form-control<?= $errorDato($errorsDatos, 'email') ? ' is-invalid' : '' ?>"
                                    value="<?= esc(old('email', $usuario->email ?? '')) ?>" maxlength="180" required>
@@ -82,6 +90,9 @@ $errorDato = static function (array $errors, string $campo): ?string {
                                 <div class="invalid-feedback"><?= esc($errorDato($errorsDatos, 'email')) ?></div>
                             <?php endif; ?>
                         </div>
+                    </div>
+
+                    <div class="form-row">
                         <div class="form-group col-md-6">
                             <label for="telefono">Teléfono</label>
                             <input type="text" id="telefono" name="telefono" class="form-control<?= $errorDato($errorsDatos, 'telefono') ? ' is-invalid' : '' ?>"
@@ -90,9 +101,6 @@ $errorDato = static function (array $errors, string $campo): ?string {
                                 <div class="invalid-feedback"><?= esc($errorDato($errorsDatos, 'telefono')) ?></div>
                             <?php endif; ?>
                         </div>
-                    </div>
-
-                    <div class="form-row">
                         <div class="form-group col-md-6">
                             <label for="fecha_nac">Fecha de nacimiento</label>
                             <input type="date" id="fecha_nac" name="fecha_nac" class="form-control<?= $errorDato($errorsDatos, 'fecha_nac') ? ' is-invalid' : '' ?>"

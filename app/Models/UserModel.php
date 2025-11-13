@@ -18,6 +18,7 @@ class UserModel extends Model
     protected $allowedFields    = [
         'nombre',
         'apellido',
+        'dni',
         'email',
         'password_hash',
         'role_id',
@@ -32,6 +33,7 @@ class UserModel extends Model
     protected $validationRules  = [
         'nombre'        => 'required|min_length[2]|max_length[120]',
         'apellido'      => 'required|min_length[2]|max_length[120]',
+        'dni'           => 'required|min_length[6]|max_length[20]',
         'email'         => 'required|valid_email|max_length[180]',
         'password_hash' => 'required|max_length[255]',
         'role_id'       => 'required|is_natural_no_zero',
