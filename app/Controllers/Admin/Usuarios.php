@@ -93,6 +93,7 @@ class Usuarios extends BaseController
         $rules = [
             'nombre'    => 'required|min_length[2]|max_length[120]',
             'apellido'  => 'required|min_length[2]|max_length[120]',
+            'dni'       => 'required|min_length[6]|max_length[20]|is_unique[users.dni]',
             'email'     => 'required|valid_email|max_length[180]|is_unique[users.email]',
             'telefono'  => 'permit_empty|max_length[50]',
             'fecha_nac' => 'permit_empty|valid_date[Y-m-d]',
@@ -101,6 +102,9 @@ class Usuarios extends BaseController
         ];
 
         $messages = [
+            'dni' => [
+                'is_unique' => 'El DNI ya está registrado por otro usuario.',
+            ],
             'email' => [
                 'is_unique' => 'El email ya está registrado por otro usuario.',
             ],
@@ -127,6 +131,7 @@ class Usuarios extends BaseController
         $payload = [
             'nombre'        => trim((string) $this->request->getPost('nombre')),
             'apellido'      => trim((string) $this->request->getPost('apellido')),
+            'dni'           => trim((string) $this->request->getPost('dni')),
             'email'         => trim((string) $this->request->getPost('email')),
             'telefono'      => $this->normalizarTelefono($this->request->getPost('telefono')),
             'fecha_nac'     => $this->normalizarFecha($this->request->getPost('fecha_nac')),

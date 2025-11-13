@@ -44,12 +44,16 @@ class Perfil extends BaseController
         $rules = [
             'nombre'   => 'required|min_length[2]|max_length[120]',
             'apellido' => 'required|min_length[2]|max_length[120]',
+            'dni'      => 'required|min_length[6]|max_length[20]|is_unique[users.dni,id,' . (int) $medico->id . ']',
             'email'    => 'required|valid_email|max_length[180]|is_unique[users.email,id,' . (int) $medico->id . ']',
             'telefono' => 'permit_empty|max_length[50]',
             'fecha_nac'=> 'permit_empty|valid_date[Y-m-d]',
         ];
 
         $messages = [
+            'dni' => [
+                'is_unique' => 'El DNI ya está registrado por otro usuario.',
+            ],
             'email' => [
                 'is_unique' => 'El email ya está registrado por otro usuario.',
             ],
@@ -65,6 +69,7 @@ class Perfil extends BaseController
         $payload = [
             'nombre'    => trim((string) $this->request->getPost('nombre')),
             'apellido'  => trim((string) $this->request->getPost('apellido')),
+            'dni'       => trim((string) $this->request->getPost('dni')),
             'email'     => trim((string) $this->request->getPost('email')),
             'telefono'  => trim((string) $this->request->getPost('telefono')) ?: null,
             'fecha_nac' => $this->normalizarFecha($this->request->getPost('fecha_nac')),
@@ -172,4 +177,3 @@ class Perfil extends BaseController
         return $medico;
     }
 }
-
