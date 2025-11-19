@@ -30,6 +30,12 @@
                 </div>
             <?php endif; ?>
 
+            <?php if (session()->getFlashdata('register_success')): ?>
+                <div class="alert alert-success" role="alert">
+                    <?= esc(session()->getFlashdata('register_success')) ?>
+                </div>
+            <?php endif; ?>
+
             <?php if (session()->getFlashdata('errors')): ?>
                 <div class="alert alert-warning" role="alert">
                     <?php foreach ((array) session()->getFlashdata('errors') as $err): ?>
@@ -66,7 +72,12 @@
                     </div>
                 </div>
             </form>
-            <p class="mt-3 text-center text-muted small mb-0">Acceso restringido a usuarios registrados.</p>
+            <div class="mt-3 text-center">
+                <a href="<?= route_to('auth_register') ?>" class="btn btn-outline-primary btn-block">
+                    <i class="fas fa-user-plus mr-1"></i> Crear cuenta
+                </a>
+                <p class="text-muted small mb-0 mt-2">Acceso restringido a usuarios registrados.</p>
+            </div>
         </div>
     </div>
 </div>

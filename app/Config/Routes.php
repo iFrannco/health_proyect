@@ -11,6 +11,8 @@ $routes->get('/', 'Auth\\Login::index');
 $routes->group('auth', function ($routes) {
     $routes->get('login', 'Auth\Login::index', ['as' => 'auth_login']);
     $routes->post('login', 'Auth\Login::autenticar', ['as' => 'auth_login_post']);
+    $routes->get('register', 'Auth\Register::index', ['as' => 'auth_register']);
+    $routes->post('register', 'Auth\Register::store', ['as' => 'auth_register_post']);
     $routes->get('logout', 'Auth\Logout::index', ['as' => 'auth_logout']);
 });
 
