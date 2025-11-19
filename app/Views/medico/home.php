@@ -2,12 +2,20 @@
 
 <?= $this->section('styles') ?>
 <style>
+.dashboard-small-box {
+    min-height: 150px;
+}
+
 .dashboard-small-box .inner {
     min-height: 135px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .35rem;
 }
 
 .dashboard-small-box .icon {
-    top: 12px;
+    top: 14px;
 }
 
 .dashboard-small-box .metric-note {

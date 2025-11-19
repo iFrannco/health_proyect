@@ -2,17 +2,26 @@
 
 <?= $this->section('styles') ?>
 <style>
-.dashboard-kpi-col {
-    display: flex;
+.dashboard-small-box {
+    min-height: 150px;
 }
-.dashboard-kpi-box {
-    width: 100%;
-    min-height: 130px;
-}
-.dashboard-kpi-box .info-box-content {
+
+.dashboard-small-box .inner {
+    min-height: 135px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    gap: .35rem;
+}
+
+.dashboard-small-box .icon {
+    top: 14px;
+}
+
+.dashboard-small-box .metric-note {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    margin-bottom: 0;
 }
 .dashboard-chart-container {
     position: relative;
@@ -90,70 +99,61 @@ $formatearFecha = static function (?string $fecha): string {
 </div>
 
 <div class="row">
-    <div class="col-sm-6 col-lg-4 col-xl-2 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-info"><i class="fas fa-stethoscope"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Diagnósticos activos</span>
-                <span class="info-box-number" data-kpi="diagnosticosActivos">
-                    <?= esc($formatEntero($kpis['diagnosticosActivos'] ?? 0)) ?>
-                </span>
+    <div class="col-sm-6 col-lg-4 col-xl-2 mb-4">
+        <div class="small-box bg-info dashboard-small-box">
+            <div class="inner">
+                <h3 data-kpi="diagnosticosActivos"><?= esc($formatEntero($kpis['diagnosticosActivos'] ?? 0)) ?></h3>
+                <p>Diagnósticos activos</p>
             </div>
+            <div class="icon"><i class="fas fa-stethoscope"></i></div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-4 col-xl-2 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-primary"><i class="fas fa-heartbeat"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Planes activos</span>
-                <span class="info-box-number" data-kpi="planesActivos">
-                    <?= esc($formatEntero($kpis['planesActivos'] ?? 0)) ?>
-                </span>
+    <div class="col-sm-6 col-lg-4 col-xl-2 mb-4">
+        <div class="small-box bg-primary dashboard-small-box">
+            <div class="inner">
+                <h3 data-kpi="planesActivos"><?= esc($formatEntero($kpis['planesActivos'] ?? 0)) ?></h3>
+                <p>Planes activos</p>
             </div>
+            <div class="icon"><i class="fas fa-heartbeat"></i></div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-4 col-xl-2 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-success"><i class="fas fa-flag-checkered"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Planes completados</span>
-                <span class="info-box-number" data-kpi="planesFinalizados">
-                    <?= esc($formatEntero($kpis['planesFinalizados'] ?? 0)) ?>
-                </span>
+    <div class="col-sm-6 col-lg-4 col-xl-2 mb-4">
+        <div class="small-box bg-success dashboard-small-box">
+            <div class="inner">
+                <h3 data-kpi="planesFinalizados"><?= esc($formatEntero($kpis['planesFinalizados'] ?? 0)) ?></h3>
+                <p>Planes completados</p>
+                <p class="metric-note">Incluye todos los planes finalizados</p>
             </div>
+            <div class="icon"><i class="fas fa-flag-checkered"></i></div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-4 col-xl-2 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-teal"><i class="fas fa-check-circle"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Actividades completadas</span>
-                <span class="info-box-number" data-kpi="actividadesCompletadas">
-                    <?= esc($formatEntero($kpis['actividadesCompletadas'] ?? 0)) ?>
-                </span>
+    <div class="col-sm-6 col-lg-4 col-xl-2 mb-4">
+        <div class="small-box bg-teal dashboard-small-box">
+            <div class="inner">
+                <h3 data-kpi="actividadesCompletadas"><?= esc($formatEntero($kpis['actividadesCompletadas'] ?? 0)) ?></h3>
+                <p>Actividades completadas</p>
             </div>
+            <div class="icon"><i class="fas fa-check-circle"></i></div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-4 col-xl-2 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-warning"><i class="fas fa-clock"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Actividades pendientes</span>
-                <span class="info-box-number" data-kpi="actividadesPendientes">
-                    <?= esc($formatEntero($kpis['actividadesPendientes'] ?? 0)) ?>
-                </span>
+    <div class="col-sm-6 col-lg-4 col-xl-2 mb-4">
+        <div class="small-box bg-warning dashboard-small-box">
+            <div class="inner">
+                <h3 data-kpi="actividadesPendientes"><?= esc($formatEntero($kpis['actividadesPendientes'] ?? 0)) ?></h3>
+                <p>Actividades pendientes</p>
+                <p class="metric-note">Por completar dentro del período</p>
             </div>
+            <div class="icon"><i class="fas fa-clock"></i></div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-4 col-xl-2 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-danger"><i class="fas fa-exclamation-triangle"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Actividades vencidas</span>
-                <span class="info-box-number" data-kpi="actividadesVencidas">
-                    <?= esc($formatEntero($kpis['actividadesVencidas'] ?? 0)) ?>
-                </span>
+    <div class="col-sm-6 col-lg-4 col-xl-2 mb-4">
+        <div class="small-box bg-danger dashboard-small-box">
+            <div class="inner">
+                <h3 data-kpi="actividadesVencidas"><?= esc($formatEntero($kpis['actividadesVencidas'] ?? 0)) ?></h3>
+                <p>Actividades vencidas</p>
+                <p class="metric-note">Revisá las fechas comprometidas</p>
             </div>
+            <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
         </div>
     </div>
 </div>
