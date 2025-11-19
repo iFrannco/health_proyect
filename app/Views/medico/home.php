@@ -2,17 +2,18 @@
 
 <?= $this->section('styles') ?>
 <style>
-.dashboard-kpi-col {
-    display: flex;
+.dashboard-small-box .inner {
+    min-height: 135px;
 }
-.dashboard-kpi-box {
-    width: 100%;
-    min-height: 140px;
+
+.dashboard-small-box .icon {
+    top: 12px;
 }
-.dashboard-kpi-box .info-box-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+
+.dashboard-small-box .metric-note {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+    opacity: 0.9;
 }
 </style>
 <?= $this->endSection() ?>
@@ -71,100 +72,100 @@ $diagnosticosActivos = $kpis['diagnosticosActivos'] ?? 0;
 <?= view('layouts/partials/alerts') ?>
 
 <div class="row">
-    <div class="col-sm-6 col-lg-3 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-info"><i class="fas fa-user-injured"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Pacientes diagnosticados</span>
-                <span class="info-box-number"><?= esc($formatEntero($kpis['pacientesDiagnosticados'] ?? 0)) ?></span>
-                <small class="text-muted">Distinctos en tus diagnósticos</small>
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="small-box bg-info dashboard-small-box">
+            <div class="inner">
+                <h3><?= esc($formatEntero($kpis['pacientesDiagnosticados'] ?? 0)) ?></h3>
+                <p>Pacientes diagnosticados</p>
+                <p class="metric-note">Distinctos en tus diagnósticos</p>
             </div>
+            <div class="icon"><i class="fas fa-user-injured"></i></div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-3 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-primary"><i class="fas fa-heartbeat"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Diagnósticos activos</span>
-                <span class="info-box-number"><?= esc($formatEntero($diagnosticosActivos)) ?></span>
-                <small class="text-muted">de <?= esc($formatEntero($diagnosticosTotales)) ?> registrados</small>
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="small-box bg-primary dashboard-small-box">
+            <div class="inner">
+                <h3><?= esc($formatEntero($diagnosticosActivos)) ?></h3>
+                <p>Diagnósticos activos</p>
+                <p class="metric-note">de <?= esc($formatEntero($diagnosticosTotales)) ?> registrados</p>
             </div>
+            <div class="icon"><i class="fas fa-heartbeat"></i></div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-3 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-teal"><i class="fas fa-notes-medical"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Planes creados</span>
-                <span class="info-box-number"><?= esc($formatEntero($kpis['planesCreados'] ?? 0)) ?></span>
-                <small class="text-muted">Planes personalizados que has generado</small>
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="small-box bg-teal dashboard-small-box">
+            <div class="inner">
+                <h3><?= esc($formatEntero($kpis['planesCreados'] ?? 0)) ?></h3>
+                <p>Planes creados</p>
+                <p class="metric-note">Planes personalizados que has generado</p>
             </div>
+            <div class="icon"><i class="fas fa-notes-medical"></i></div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-3 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-purple"><i class="fas fa-user-md"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Pacientes bajo cuidado</span>
-                <span class="info-box-number"><?= esc($formatEntero($kpis['pacientesBajoCuidado'] ?? 0)) ?></span>
-                <small class="text-muted">Con planes vigentes</small>
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="small-box bg-purple dashboard-small-box">
+            <div class="inner">
+                <h3><?= esc($formatEntero($kpis['pacientesBajoCuidado'] ?? 0)) ?></h3>
+                <p>Pacientes bajo cuidado</p>
+                <p class="metric-note">Con planes vigentes</p>
             </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-sm-6 col-lg-3 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Actividades validadas</span>
-                <span class="info-box-number"><?= esc($formatDecimal($porcActividadesValidadas)) ?>%</span>
-                <small class="text-muted"><?= esc($formatEntero($actividadesValidadas)) ?> de <?= esc($formatEntero($totalActividades)) ?> actividades</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-lg-3 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-warning"><i class="fas fa-tasks"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Promedio actividades/plan</span>
-                <span class="info-box-number"><?= esc($formatDecimal($kpis['promedioActividadesPorPlan'] ?? 0.0)) ?></span>
-                <small class="text-muted">Distribución media por plan activo o finalizado</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-lg-3 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-secondary"><i class="fas fa-flag-checkered"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Planes finalizados</span>
-                <span class="info-box-number"><?= esc($formatEntero($planesFinalizadosTotal)) ?> (<?= esc($formatDecimal($planesFinalizadosPorc)) ?>%)</span>
-                <small class="text-muted">Con estado cerrado o fecha concluida</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-lg-3 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-lightblue"><i class="fas fa-clock"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Duración promedio</span>
-                <span class="info-box-number"><?= esc($formatDecimal($kpis['duracionPromedioPlanes'] ?? 0.0)) ?> días</span>
-                <small class="text-muted">Entre inicio y fin de los planes válidos</small>
-            </div>
+            <div class="icon"><i class="fas fa-user-md"></i></div>
         </div>
     </div>
 </div>
 
 <div class="row">
-    <div class="col-sm-6 col-lg-3 mb-3 dashboard-kpi-col">
-        <div class="info-box dashboard-kpi-box">
-            <span class="info-box-icon bg-danger"><i class="fas fa-user-check"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Adherencia del paciente</span>
-                <span class="info-box-number"><?= esc($formatDecimal($kpis['adherenciaPacientes'] ?? 0.0)) ?>%</span>
-                <small class="text-muted">Actividades marcadas como completadas</small>
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="small-box bg-success dashboard-small-box">
+            <div class="inner">
+                <h3><?= esc($formatDecimal($porcActividadesValidadas)) ?>%</h3>
+                <p>Actividades validadas</p>
+                <p class="metric-note"><?= esc($formatEntero($actividadesValidadas)) ?> de <?= esc($formatEntero($totalActividades)) ?> actividades</p>
             </div>
+            <div class="icon"><i class="fas fa-check-circle"></i></div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="small-box bg-warning dashboard-small-box">
+            <div class="inner">
+                <h3><?= esc($formatDecimal($kpis['promedioActividadesPorPlan'] ?? 0.0)) ?></h3>
+                <p>Promedio actividades/plan</p>
+                <p class="metric-note">Distribución media por plan activo o finalizado</p>
+            </div>
+            <div class="icon"><i class="fas fa-tasks"></i></div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="small-box bg-secondary dashboard-small-box">
+            <div class="inner">
+                <h3><?= esc($formatEntero($planesFinalizadosTotal)) ?></h3>
+                <p>Planes finalizados</p>
+                <p class="metric-note"><?= esc($formatDecimal($planesFinalizadosPorc)) ?>% con estado cerrado o fecha concluida</p>
+            </div>
+            <div class="icon"><i class="fas fa-flag-checkered"></i></div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="small-box bg-lightblue dashboard-small-box">
+            <div class="inner">
+                <h3><?= esc($formatDecimal($kpis['duracionPromedioPlanes'] ?? 0.0)) ?> días</h3>
+                <p>Duración promedio</p>
+                <p class="metric-note">Entre inicio y fin de los planes válidos</p>
+            </div>
+            <div class="icon"><i class="fas fa-clock"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="small-box bg-danger dashboard-small-box">
+            <div class="inner">
+                <h3><?= esc($formatDecimal($kpis['adherenciaPacientes'] ?? 0.0)) ?>%</h3>
+                <p>Adherencia del paciente</p>
+                <p class="metric-note">Actividades marcadas como completadas</p>
+            </div>
+            <div class="icon"><i class="fas fa-user-check"></i></div>
         </div>
     </div>
 </div>
