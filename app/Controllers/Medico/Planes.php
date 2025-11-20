@@ -1030,6 +1030,7 @@ class Planes extends BaseController
             'plan_id'              => (int) ($actividad['plan_id'] ?? 0),
             'nombre'               => $actividad['nombre'] ?? '',
             'descripcion'          => $actividad['descripcion'] ?? '',
+            'paciente_comentario'  => $actividad['paciente_comentario'] ?? null,
             'fecha_inicio'         => $actividad['fecha_inicio'] ?? null,
             'fecha_fin'            => $actividad['fecha_fin'] ?? null,
             'estado_id'            => isset($actividad['estado_id']) ? (int) $actividad['estado_id'] : null,

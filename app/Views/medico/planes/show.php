@@ -23,18 +23,42 @@
     }
 
     .tabla-accion-col {
-        width: 150px;
-        min-width: 150px;
+        width: 190px;
+        min-width: 190px;
         text-align: right;
         white-space: nowrap;
     }
 
-    .tabla-accion-col .btn {
+    .tabla-accion-col .btn:not(.tabla-comentario-btn) {
         min-width: 120px;
         width: 120px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    .tabla-accion-grupo {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: .4rem;
+    }
+
+    .tabla-comentario-btn {
+        width: 36px;
+        min-width: 36px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-comentario-texto {
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 1rem;
     }
 
     #tabla-actividades-medico tbody tr td {
@@ -236,11 +260,15 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                                     $fechaValidacion    = $actividad['fecha_validacion'] ?? null;
                                     $puedeValidar       = $estadoSlug === 'completada' && ! $estaValidado;
                                     $puedeDesvalidar    = $estaValidado || $estadoSlug !== 'completada';
+                                    $comentarioPaciente = trim((string) ($actividad['paciente_comentario'] ?? ''));
+                                    $tieneComentario    = $comentarioPaciente !== '';
+                                    $comentarioBtnClass = $tieneComentario ? 'btn-outline-info' : 'btn-outline-secondary';
                                     ?>
                                     <tr data-actividad-id="<?= esc((string) $actividadId) ?>"
                                         data-estado="<?= esc($estadoSlug) ?>"
                                         data-validado="<?= $estaValidado ? '1' : '0' ?>"
-                                        data-fecha-validacion="<?= esc($fechaValidacion ?? '') ?>">
+                                        data-fecha-validacion="<?= esc($fechaValidacion ?? '') ?>"
+                                        data-comentario="<?= esc($comentarioPaciente, 'attr') ?>">
                                         <td><?= esc($actividad['nombre'] ?? 'Actividad') ?></td>
                                         <td><?= esc($descripcion) ?></td>
                                         <td class="text-nowrap"><?= esc($formatearFecha($actividad['fecha_inicio'] ?? null)) ?></td>
@@ -267,23 +295,35 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-nowrap tabla-accion-col" data-role="accion">
-                                            <?php if ($puedeValidar): ?>
+                                            <div class="tabla-accion-grupo">
                                                 <button type="button"
-                                                    class="btn btn-success btn-sm"
-                                                    data-action="validar"
-                                                    data-actividad-id="<?= esc((string) $actividadId) ?>">
-                                                    Validar
+                                                    class="btn btn-sm tabla-comentario-btn <?= esc($comentarioBtnClass) ?>"
+                                                    data-action="mostrar-comentario"
+                                                    data-actividad-id="<?= esc((string) $actividadId) ?>"
+                                                    data-comentario="<?= esc($comentarioPaciente, 'attr') ?>"
+                                                    title="<?= esc($tieneComentario ? 'Ver comentario del paciente' : 'Sin comentario del paciente') ?>"
+                                                    aria-label="<?= esc($tieneComentario ? 'Ver comentario del paciente' : 'Sin comentario del paciente') ?>"
+                                                    <?= $tieneComentario ? '' : 'disabled' ?>>
+                                                    <i class="far fa-comment-dots"></i>
                                                 </button>
-                                            <?php elseif ($puedeDesvalidar): ?>
-                                                <button type="button"
-                                                    class="btn btn-outline-warning btn-sm"
-                                                    data-action="desvalidar"
-                                                    data-actividad-id="<?= esc((string) $actividadId) ?>">
-                                                    Desvalidar
-                                                </button>
-                                            <?php else: ?>
-                                                <button type="button" class="btn btn-outline-secondary btn-sm" disabled>Validar</button>
-                                            <?php endif; ?>
+                                                <?php if ($puedeValidar): ?>
+                                                    <button type="button"
+                                                        class="btn btn-success btn-sm"
+                                                        data-action="validar"
+                                                        data-actividad-id="<?= esc((string) $actividadId) ?>">
+                                                        Validar
+                                                    </button>
+                                                <?php elseif ($puedeDesvalidar): ?>
+                                                    <button type="button"
+                                                        class="btn btn-outline-warning btn-sm"
+                                                        data-action="desvalidar"
+                                                        data-actividad-id="<?= esc((string) $actividadId) ?>">
+                                                        Desvalidar
+                                                    </button>
+                                                <?php else: ?>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" disabled>Validar</button>
+                                                <?php endif; ?>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -320,12 +360,38 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
         </div>
     </div>
 </div>
+<div class="modal fade" id="modal-ver-comentario" tabindex="-1" role="dialog" aria-labelledby="modal-ver-comentario-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-ver-comentario-label">
+                    <i class="far fa-comment-dots mr-2"></i> Comentario del paciente
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-2">Mensaje registrado para esta actividad.</p>
+                <div id="modal-comentario-contenido" class="modal-comentario-texto d-none"></div>
+                <p id="modal-comentario-placeholder" class="text-muted mb-0">El paciente no dejó un comentario en esta actividad.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
     (function() {
         var tabla = document.getElementById('tabla-actividades-medico');
         if (!tabla) {
             return;
         }
+
+        var modalComentarioJQ = window.jQuery ? window.jQuery('#modal-ver-comentario') : null;
+        var modalComentarioContenido = document.getElementById('modal-comentario-contenido');
+        var modalComentarioPlaceholder = document.getElementById('modal-comentario-placeholder');
 
         var validarBaseUrl = '<?= site_url('medico/planes/actividades') ?>';
 
@@ -356,6 +422,28 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                 hour: '2-digit',
                 minute: '2-digit'
             });
+        }
+
+        function abrirModalComentario(texto) {
+            var contenido = (texto || '').trim();
+            var tieneContenido = contenido !== '';
+
+            if (modalComentarioContenido) {
+                modalComentarioContenido.textContent = tieneContenido ? contenido : '';
+                modalComentarioContenido.classList.toggle('d-none', !tieneContenido);
+            }
+
+            if (modalComentarioPlaceholder) {
+                modalComentarioPlaceholder.classList.toggle('d-none', tieneContenido);
+            }
+
+            if (modalComentarioJQ && typeof modalComentarioJQ.modal === 'function') {
+                modalComentarioJQ.modal('show');
+                return;
+            }
+
+            var mensajeFallback = tieneContenido ? contenido : 'El paciente no dejó un comentario en esta actividad.';
+            window.alert(mensajeFallback);
         }
 
         function mostrarToast(mensaje, tipo) {
@@ -404,16 +492,28 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
             var idSeguro = escapeHtml(idTexto);
             var estado = actividad.estado_slug || '';
             var validado = actividad.validado === true;
+            var comentarioBtn = buildBotonComentarioHtml(actividad, idSeguro);
+            var principalBtn;
 
             if (estado === 'completada' && !validado) {
-                return '<button type="button" class="btn btn-success btn-sm" data-action="validar" data-actividad-id="' + idSeguro + '">Validar</button>';
+                principalBtn = '<button type="button" class="btn btn-success btn-sm" data-action="validar" data-actividad-id="' + idSeguro + '">Validar</button>';
+            } else if (validado || estado !== 'completada') {
+                principalBtn = '<button type="button" class="btn btn-outline-warning btn-sm" data-action="desvalidar" data-actividad-id="' + idSeguro + '">Desvalidar</button>';
+            } else {
+                principalBtn = '<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Validar</button>';
             }
 
-            if (validado || estado !== 'completada') {
-                return '<button type="button" class="btn btn-outline-warning btn-sm" data-action="desvalidar" data-actividad-id="' + idSeguro + '">Desvalidar</button>';
-            }
+            return '<div class="tabla-accion-grupo">' + comentarioBtn + principalBtn + '</div>';
+        }
 
-            return '<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Validar</button>';
+        function buildBotonComentarioHtml(actividad, idSeguro) {
+            var comentario = actividad.paciente_comentario ? escapeHtml(actividad.paciente_comentario) : '';
+            var tieneComentario = comentario !== '';
+            var clases = 'btn btn-sm tabla-comentario-btn ' + (tieneComentario ? 'btn-outline-info' : 'btn-outline-secondary');
+            var titulo = tieneComentario ? 'Ver comentario del paciente' : 'Sin comentario del paciente';
+            var disabledAttr = tieneComentario ? '' : ' disabled';
+
+            return '<button type="button" class="' + clases + '" data-action="mostrar-comentario" data-actividad-id="' + idSeguro + '" data-comentario="' + comentario + '" title="' + escapeHtml(titulo) + '" aria-label="' + escapeHtml(titulo) + '"' + disabledAttr + '><i class="far fa-comment-dots"></i></button>';
         }
 
         function actualizarResumen(resumen) {
@@ -460,6 +560,7 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
             fila.setAttribute('data-estado', actividad.estado_slug || '');
             fila.setAttribute('data-validado', actividad.validado === true ? '1' : '0');
             fila.setAttribute('data-fecha-validacion', actividad.fecha_validacion || '');
+            fila.setAttribute('data-comentario', actividad.paciente_comentario || '');
 
             var celdaValidado = fila.querySelector('[data-role=\"validado\"]');
             if (celdaValidado) {
@@ -545,9 +646,22 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
             }
 
             var accion = boton.getAttribute('data-action');
-            var actividadId = boton.getAttribute('data-actividad-id');
+            if (!accion) {
+                return;
+            }
 
-            if (!accion || !actividadId) {
+            if (accion === 'mostrar-comentario') {
+                var comentario = boton.getAttribute('data-comentario') || '';
+                abrirModalComentario(comentario);
+                return;
+            }
+
+            var actividadId = boton.getAttribute('data-actividad-id');
+            if (!actividadId) {
+                return;
+            }
+
+            if (accion !== 'validar' && accion !== 'desvalidar') {
                 return;
             }
 
