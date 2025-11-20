@@ -17,6 +17,7 @@ function buildLayoutData(string $rol): array
                 ['label' => 'Home', 'url' => site_url('admin/home'), 'icon' => 'fas fa-home'],
                 ['label' => 'Usuarios', 'url' => site_url('admin/usuarios'), 'icon' => 'fas fa-users'],
                 ['label' => 'Planes de cuidado estándar', 'url' => site_url('admin/planes-estandar'), 'icon' => 'fas fa-notes-medical'],
+                ['label' => 'Tipos de Diagnóstico', 'url' => site_url('admin/tipos-diagnostico'), 'icon' => 'fas fa-file-medical'],
             ];
             $perfilUrl = site_url('admin/perfil');
             break;

@@ -25,6 +25,11 @@ $routes->group('admin', ['filter' => 'auth'], function ($routes) {
     $routes->post('usuarios/(:num)/actualizar', 'Admin\Usuarios::update/$1', ['as' => 'admin_usuarios_update']);
     $routes->post('usuarios/(:num)/reset-password', 'Admin\Usuarios::resetPassword/$1', ['as' => 'admin_usuarios_reset_password']);
     $routes->post('usuarios/(:num)/estado', 'Admin\Usuarios::cambiarEstado/$1', ['as' => 'admin_usuarios_toggle_estado']);
+
+    $routes->get('tipos-diagnostico', 'Admin\TiposDiagnostico::index', ['as' => 'admin_tipos_diagnostico_index']);
+    $routes->post('tipos-diagnostico', 'Admin\TiposDiagnostico::store', ['as' => 'admin_tipos_diagnostico_store']);
+    $routes->post('tipos-diagnostico/(:num)/actualizar', 'Admin\TiposDiagnostico::update/$1', ['as' => 'admin_tipos_diagnostico_update']);
+    $routes->post('tipos-diagnostico/(:num)/estado', 'Admin\TiposDiagnostico::toggle/$1', ['as' => 'admin_tipos_diagnostico_toggle']);
 });
 
 $routes->group('paciente', ['filter' => 'auth'], function ($routes) {
