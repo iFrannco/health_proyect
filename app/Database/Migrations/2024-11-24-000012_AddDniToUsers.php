@@ -8,6 +8,12 @@ class AddDniToUsers extends Migration
 {
     public function up(): void
     {
+        $db       = db_connect();
+        if ($db->fieldExists('dni', 'users')) {
+            // Column already exists; nothing to do.
+            return;
+        }
+
         $this->forge->addColumn('users', [
             'dni' => [
                 'type'       => 'VARCHAR',
@@ -18,7 +24,6 @@ class AddDniToUsers extends Migration
             ],
         ]);
 
-        $db       = db_connect();
         $builder  = $db->table('users');
         $usuarios = $builder->select(['id'])->orderBy('id', 'ASC')->get()->getResultArray();
 
@@ -51,6 +56,9 @@ class AddDniToUsers extends Migration
 
     public function down(): void
     {
-        $this->forge->dropColumn('users', 'dni');
+        $db = db_connect();
+        if ($db->fieldExists('dni', 'users')) {
+            $this->forge->dropColumn('users', 'dni');
+        }
     }
 }
