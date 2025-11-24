@@ -157,7 +157,7 @@ class Planes extends BaseController
             ]);
         }
 
-        $actividadesData = $this->extraerActividadesDesdeRequest();
+        $actividadesData = $this->extraerActividadesDesdeRequest($fechaInicio, $fechaFin);
         if (! empty($actividadesData['erroresGenerales'])) {
             return $this->redirectBackWithActividadErrors(
                 'Revisa las actividades ingresadas.',
@@ -432,7 +432,7 @@ class Planes extends BaseController
             ]);
         }
 
-        $actividadesData = $this->extraerActividadesDesdeRequest();
+        $actividadesData = $this->extraerActividadesDesdeRequest($fechaInicio, $fechaFin);
         if (! empty($actividadesData['erroresGenerales'])) {
             return $this->redirectBackWithActividadErrors(
                 'Revisa las actividades ingresadas.',
@@ -627,7 +627,7 @@ class Planes extends BaseController
         return redirect()->to(route_to('medico_planes_index'));
     }
 
-    private function extraerActividadesDesdeRequest(): array
+    private function extraerActividadesDesdeRequest(?string $planFechaInicio = null, ?string $planFechaFin = null): array
     {
         $nombres       = (array) $this->request->getPost('actividad_nombre');
         $descripciones = (array) $this->request->getPost('actividad_descripcion');
@@ -686,6 +686,14 @@ class Planes extends BaseController
                 $erroresFila['fecha_fin'] = 'La fecha de fin debe ser igual o posterior a la fecha de inicio.';
             }
 
+            if ($planFechaInicio !== null && $fechaInicio !== '' && $fechaInicio < $planFechaInicio) {
+                $erroresFila['fecha_inicio'] = 'La fecha de inicio debe estar dentro del período del plan.';
+            }
+
+            if ($planFechaFin !== null && $fechaFin !== '' && $fechaFin > $planFechaFin) {
+                $erroresFila['fecha_fin'] = 'La fecha de fin debe estar dentro del período del plan.';
+            }
+
             if (! empty($erroresFila)) {
                 $erroresPorIndice[$index] = $erroresFila;
 
@@ -701,7 +709,9 @@ class Planes extends BaseController
             ];
         }
 
-        if (empty($actividades)) {
+        if (! empty($erroresPorIndice)) {
+            $erroresGenerales[] = 'Las actividades cargadas contienen errores. Corrígelos antes de guardar.';
+        } elseif (empty($actividades)) {
             $erroresGenerales[] = 'Las actividades cargadas contienen errores. Corrígelos antes de guardar.';
         }
 
