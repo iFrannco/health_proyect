@@ -48,7 +48,7 @@ class Perfil extends BaseController
             'dni'      => 'required|min_length[6]|max_length[20]|is_unique[users.dni,id,' . (int) $admin->id . ']',
             'email'    => 'required|valid_email|max_length[180]|is_unique[users.email,id,' . (int) $admin->id . ']',
             'telefono' => 'permit_empty|max_length[50]',
-            'fecha_nac'=> 'permit_empty|valid_date[Y-m-d]',
+            'fecha_nac'=> 'permit_empty|valid_date[Y-m-d]|before_today',
         ];
 
         $messages = [
@@ -60,6 +60,7 @@ class Perfil extends BaseController
             ],
             'fecha_nac' => [
                 'valid_date' => 'La fecha de nacimiento debe tener el formato YYYY-MM-DD.',
+                'before_today' => 'La fecha de nacimiento debe ser anterior a hoy.',
             ],
         ];
 

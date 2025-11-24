@@ -101,7 +101,7 @@ class Usuarios extends BaseController
             'dni'       => 'required|min_length[6]|max_length[20]|is_unique[users.dni]',
             'email'     => 'required|valid_email|max_length[180]|is_unique[users.email]',
             'telefono'  => 'permit_empty|max_length[50]',
-            'fecha_nac' => 'permit_empty|valid_date[Y-m-d]',
+            'fecha_nac' => 'permit_empty|valid_date[Y-m-d]|before_today',
             'rol'       => 'required|in_list[' . $roleList . ']',
             'password'  => 'required|min_length[8]|max_length[64]',
         ];
@@ -118,6 +118,7 @@ class Usuarios extends BaseController
             ],
             'fecha_nac' => [
                 'valid_date' => 'La fecha de nacimiento debe tener el formato AAAA-MM-DD.',
+                'before_today' => 'La fecha de nacimiento debe ser anterior a hoy.',
             ],
         ];
 
@@ -206,7 +207,7 @@ class Usuarios extends BaseController
             'dni'      => 'required|min_length[6]|max_length[20]|is_unique[users.dni,id,' . $usuarioId . ']',
             'email'    => 'required|valid_email|max_length[180]|is_unique[users.email,id,' . $usuarioId . ']',
             'telefono' => 'permit_empty|max_length[50]',
-            'fecha_nac'=> 'permit_empty|valid_date[Y-m-d]',
+            'fecha_nac'=> 'permit_empty|valid_date[Y-m-d]|before_today',
         ];
 
         $messages = [
@@ -218,6 +219,7 @@ class Usuarios extends BaseController
             ],
             'fecha_nac' => [
                 'valid_date' => 'La fecha de nacimiento debe tener el formato YYYY-MM-DD.',
+                'before_today' => 'La fecha de nacimiento debe ser anterior a hoy.',
             ],
         ];
 

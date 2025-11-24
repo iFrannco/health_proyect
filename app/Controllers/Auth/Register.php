@@ -63,7 +63,7 @@ class Register extends BaseController
             'dni'       => 'required|min_length[6]|max_length[20]|is_unique[users.dni]',
             'email'     => 'required|valid_email|max_length[180]|is_unique[users.email]',
             'telefono'  => 'permit_empty|max_length[50]',
-            'fecha_nac' => 'permit_empty|valid_date[Y-m-d]',
+            'fecha_nac' => 'permit_empty|valid_date[Y-m-d]|before_today',
             'rol'       => 'required|in_list[' . $roleList . ']',
             'password'  => 'required|min_length[8]|max_length[64]|regex_match[/^(?=.*[A-Za-z])(?=.*\\d)(?=.*[^A-Za-z0-9]).+$/]',
         ];
@@ -80,6 +80,7 @@ class Register extends BaseController
             ],
             'fecha_nac' => [
                 'valid_date' => 'La fecha de nacimiento debe tener el formato AAAA-MM-DD.',
+                'before_today' => 'La fecha de nacimiento debe ser anterior a hoy.',
             ],
             'password' => [
                 'regex_match' => 'La contraseña debe tener al menos 8 caracteres, una letra, un número y un símbolo.',
