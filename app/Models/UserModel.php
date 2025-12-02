@@ -59,6 +59,41 @@ class UserModel extends Model
             ->findAll();
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function buscarPacientesPorNombreODni(string $termino, ?string $dniSoloDigitos = null, int $limit = 10): array
+    {
+        $builder = $this->select([
+                'users.id',
+                'users.nombre',
+                'users.apellido',
+                'users.dni',
+            ])
+            ->join('roles', 'roles.id = users.role_id', 'inner')
+            ->where('users.activo', 1)
+            ->where('roles.slug', self::ROLE_PACIENTE)
+            ->orderBy('users.apellido', 'ASC')
+            ->orderBy('users.nombre', 'ASC')
+            ->limit($limit)
+            ->asArray();
+
+        if ($dniSoloDigitos !== null && $dniSoloDigitos !== '') {
+            return $builder
+                ->like('users.dni', $dniSoloDigitos, 'both', null, true)
+                ->findAll();
+        }
+
+        $terminoNormalizado = trim($termino);
+
+        return $builder
+            ->groupStart()
+                ->like('users.nombre', $terminoNormalizado, 'both', null, true)
+                ->orLike('users.apellido', $terminoNormalizado, 'both', null, true)
+            ->groupEnd()
+            ->findAll();
+    }
+
     public function findActivoPorRol(int $userId, string $roleSlug): ?User
     {
         return $this->select('users.*')

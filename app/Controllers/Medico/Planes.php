@@ -68,10 +68,75 @@ class Planes extends BaseController
         return view('medico/planes/index', $this->layoutData() + $data);
     }
 
+    public function buscarPacientes(): ResponseInterface
+    {
+        $this->obtenerMedicoActual();
+
+        $termino = trim((string) ($this->request->getGet('q') ?? ''));
+
+        if ($termino === '' || mb_strlen($termino) < 2) {
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Ingresa al menos 2 caracteres para buscar por nombre o DNI.',
+                ]);
+        }
+
+        $dniSoloDigitos = preg_replace('/\D+/', '', $termino);
+        if ($dniSoloDigitos !== '' && mb_strlen($dniSoloDigitos) < 4) {
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Ingresa al menos 4 dígitos para buscar por DNI.',
+                ]);
+        }
+
+        try {
+            $pacientes = $this->userModel->buscarPacientesPorNombreODni(
+                $termino,
+                $dniSoloDigitos !== '' ? $dniSoloDigitos : null,
+                10
+            );
+        } catch (\Throwable $exception) {
+            log_message('error', 'Error al buscar pacientes: {exception}', ['exception' => $exception]);
+
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'No se pudo completar la búsqueda. Inténtalo nuevamente.',
+                ]);
+        }
+
+        $resultado = array_map(static function (array $paciente) {
+            return [
+                'id'       => (int) ($paciente['id'] ?? 0),
+                'nombre'   => $paciente['nombre'] ?? '',
+                'apellido' => $paciente['apellido'] ?? '',
+                'dni'      => $paciente['dni'] ?? '',
+            ];
+        }, $pacientes);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data'    => [
+                'pacientes' => $resultado,
+            ],
+        ]);
+    }
+
     public function create()
     {
-        $medico    = $this->obtenerMedicoActual();
-        $pacientes = $this->userModel->findActivosPorRol(UserModel::ROLE_PACIENTE);
+        $medico = $this->obtenerMedicoActual();
+        $pacienteSeleccionado = null;
+        $pacienteIdOld        = (int) (old('paciente_id') ?? 0);
+
+        if ($pacienteIdOld > 0) {
+            $pacienteSeleccionado = $this->userModel->findActivoPorRol($pacienteIdOld, UserModel::ROLE_PACIENTE);
+        }
+
         $diagnosticos = $this->diagnosticoModel->asArray()
             ->select([
                 'diagnosticos.id',
@@ -82,12 +147,14 @@ class Planes extends BaseController
             ->findAll();
 
         $data = [
-            'title'                   => 'Nuevo plan personalizado',
-            'medico'                  => $medico,
-            'pacientes'               => $pacientes,
-            'diagnosticos'            => $diagnosticos,
-            'errors'                  => session()->getFlashdata('errors') ?? [],
-            'actividadErrors'         => session()->getFlashdata('actividad_errors') ?? [],
+            'title'                    => 'Nuevo plan personalizado',
+            'medico'                   => $medico,
+            'pacientes'                => [],
+            'diagnosticos'             => $diagnosticos,
+            'pacienteSeleccionado'     => $pacienteSeleccionado,
+            'terminoBusquedaPaciente'  => old('busqueda_paciente', ''),
+            'errors'                   => session()->getFlashdata('errors') ?? [],
+            'actividadErrors'          => session()->getFlashdata('actividad_errors') ?? [],
         ];
 
         return view('medico/planes/create', $this->layoutData() + $data);

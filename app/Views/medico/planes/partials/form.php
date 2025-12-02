@@ -10,6 +10,8 @@ $diagnosticos    = $diagnosticos ?? [];
 $errores         = $errors ?? [];
 $actividadErrors = $actividadErrors ?? [];
 $actividades     = $actividades ?? [];
+$pacienteSeleccionado = $pacienteSeleccionado ?? null;
+$terminoBusquedaPaciente = $terminoBusquedaPaciente ?? '';
 
 $selectedPacienteId    = old('paciente_id');
 $selectedDiagnosticoId = old('diagnostico_id');
@@ -77,10 +79,19 @@ if (empty($actividadesForm)) {
 
 $descripcionDiagnostico = $plan['diagnostico_descripcion'] ?? null;
 $pacienteNombreCompleto = null;
+$pacienteDniSeleccionado = null;
+$tienePacienteSeleccionado = false;
 
 if (isset($plan['paciente_apellido'], $plan['paciente_nombre'])) {
     $pacienteNombreCompleto = trim($plan['paciente_apellido'] . ', ' . $plan['paciente_nombre']);
 }
+
+if ($pacienteSeleccionado !== null) {
+    $pacienteNombreCompleto = trim(($pacienteSeleccionado->apellido ?? '') . ', ' . ($pacienteSeleccionado->nombre ?? ''));
+    $pacienteDniSeleccionado = $pacienteSeleccionado->dni ?? null;
+}
+$tienePacienteSeleccionado = (bool) ($selectedPacienteId && $pacienteNombreCompleto);
+$diagnosticoDeshabilitado = ! $selectedPacienteId;
 ?>
 
 <form action="<?= esc($formAction) ?>" method="post" id="form-plan-personalizado">
@@ -101,21 +112,41 @@ if (isset($plan['paciente_apellido'], $plan['paciente_nombre'])) {
                         <input type="hidden" name="paciente_id" value="<?= esc($plan['paciente_id'] ?? '') ?>">
                         <input type="text" class="form-control" value="<?= esc($pacienteNombreCompleto ?? 'Paciente sin datos') ?>" readonly>
                     <?php else: ?>
-                        <select name="paciente_id" id="paciente_id" class="form-control <?= isset($errores['paciente_id']) ? 'is-invalid' : '' ?>" required>
-                            <option value="">Selecciona un paciente</option>
-                            <?php foreach ($pacientes as $paciente): ?>
-                                <?php
-                                $nombreCompleto = trim(($paciente['apellido'] ?? '') . ', ' . ($paciente['nombre'] ?? ''));
-                                $esSeleccionado = (int) ($selectedPacienteId ?? 0) === (int) ($paciente['id'] ?? 0);
-                                ?>
-                                <option value="<?= esc($paciente['id']) ?>" <?= $esSeleccionado ? 'selected' : '' ?>>
-                                    <?= esc($nombreCompleto) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                        <input type="hidden" name="paciente_id" id="paciente_id" value="<?= esc($selectedPacienteId ?? '') ?>">
+                        <div class="input-group">
+                            <input type="text"
+                                   name="busqueda_paciente"
+                                   id="busqueda_paciente"
+                                   class="form-control <?= isset($errores['paciente_id']) ? 'is-invalid' : '' ?>"
+                                   placeholder="Ingresa nombre o DNI del paciente"
+                                   value="<?= esc($terminoBusquedaPaciente) ?>"
+                                   autocomplete="off">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-primary" id="btn-buscar-paciente">
+                                    <i class="fas fa-search mr-1"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">
+                            Mínimo 2 caracteres para nombre o 4 dígitos para DNI. Solo se listan pacientes activos.
+                        </small>
                         <?php if (isset($errores['paciente_id'])): ?>
-                            <div class="invalid-feedback"><?= esc($errores['paciente_id']) ?></div>
+                            <div class="invalid-feedback d-block"><?= esc($errores['paciente_id']) ?></div>
                         <?php endif; ?>
+                        <div id="paciente-seleccionado" class="alert alert-info bg-info text-white border-0 shadow-sm mt-3 <?= $tienePacienteSeleccionado ? '' : 'd-none' ?>" role="alert">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong id="paciente-seleccionado-nombre"><?= esc($pacienteNombreCompleto ?? '') ?></strong>
+                                    <div class="text-white small font-weight-semibold mb-0" id="paciente-seleccionado-dni">
+                                        <?= esc($pacienteDniSeleccionado ? 'DNI: ' . $pacienteDniSeleccionado : '') ?>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-light text-info font-weight-bold align-self-center" id="btn-limpiar-paciente">
+                                    Cambiar paciente
+                                </button>
+                            </div>
+                        </div>
+                        <div id="pacientes-resultados" class="list-group mt-3"></div>
                     <?php endif; ?>
                 </div>
                 <div class="form-group col-md-6">
@@ -124,7 +155,7 @@ if (isset($plan['paciente_apellido'], $plan['paciente_nombre'])) {
                         <input type="hidden" name="diagnostico_id" value="<?= esc($plan['diagnostico_id'] ?? '') ?>">
                         <input type="text" class="form-control" value="<?= esc($descripcionDiagnostico ? ('Diag #' . ($plan['diagnostico_id'] ?? '') . ' — ' . $descripcionDiagnostico) : 'Diagnóstico sin descripción') ?>" readonly>
                     <?php else: ?>
-                        <select name="diagnostico_id" id="diagnostico_id" class="form-control <?= isset($errores['diagnostico_id']) ? 'is-invalid' : '' ?>" required>
+                        <select name="diagnostico_id" id="diagnostico_id" class="form-control <?= isset($errores['diagnostico_id']) ? 'is-invalid' : '' ?>" required <?= $diagnosticoDeshabilitado ? 'disabled' : '' ?>>
                             <option value="">Selecciona un diagnóstico</option>
                             <?php foreach ($diagnosticos as $diagnostico): ?>
                                 <?php
