@@ -11,6 +11,7 @@ class InitialSeeder extends Seeder
         $this->call('RoleSeeder');
         $this->call('TipoDiagnosticoSeeder');
         $this->call('EstadoActividadSeeder');
+        $this->call('EspecialidadSeeder');
         $this->call('UserSeeder');
         $this->call('MedicoDashboardDemoSeeder');
     }
