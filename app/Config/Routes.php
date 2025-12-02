@@ -23,6 +23,7 @@ $routes->group('admin', ['filter' => 'auth'], function ($routes) {
     $routes->post('usuarios', 'Admin\Usuarios::store', ['as' => 'admin_usuarios_store']);
     $routes->get('usuarios/(:num)/editar', 'Admin\Usuarios::edit/$1', ['as' => 'admin_usuarios_edit']);
     $routes->post('usuarios/(:num)/actualizar', 'Admin\Usuarios::update/$1', ['as' => 'admin_usuarios_update']);
+    $routes->post('usuarios/(:num)/especialidades', 'Admin\Usuarios::actualizarEspecialidades/$1', ['as' => 'admin_usuarios_especialidades']);
     $routes->post('usuarios/(:num)/reset-password', 'Admin\Usuarios::resetPassword/$1', ['as' => 'admin_usuarios_reset_password']);
     $routes->post('usuarios/(:num)/estado', 'Admin\Usuarios::cambiarEstado/$1', ['as' => 'admin_usuarios_toggle_estado']);
 
@@ -67,4 +68,5 @@ $routes->group('medico', ['filter' => 'auth'], function ($routes) {
     $routes->get('perfil', 'Medico\Perfil::index', ['as' => 'medico_perfil_index']);
     $routes->post('perfil/datos', 'Medico\Perfil::actualizarDatos', ['as' => 'medico_perfil_actualizar_datos']);
     $routes->post('perfil/password', 'Medico\Perfil::actualizarPassword', ['as' => 'medico_perfil_actualizar_password']);
+    $routes->post('perfil/especialidades', 'Medico\Perfil::actualizarEspecialidades', ['as' => 'medico_perfil_actualizar_especialidades']);
 });

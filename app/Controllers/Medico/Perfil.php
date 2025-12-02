@@ -7,6 +7,7 @@ use App\Entities\User;
 use App\Models\UserModel;
 use App\Services\PerfilUsuarioService;
 use CodeIgniter\Exceptions\PageNotFoundException;
+use InvalidArgumentException;
 
 class Perfil extends BaseController
 {
@@ -24,16 +25,25 @@ class Perfil extends BaseController
     {
         $medico = $this->obtenerMedicoActual();
 
+        $catalogoEspecialidades   = $this->perfilService->obtenerCatalogoEspecialidades();
+        $especialidadesAsignadas  = $this->perfilService->obtenerEspecialidadesAsignadas((int) $medico->id);
+        $errorsEspecialidades     = session()->getFlashdata('errors_especialidades') ?? [];
+
         return view('paciente/perfil/index', $this->layoutData() + [
-            'title'          => 'Mi perfil',
-            'usuario'        => $medico,
-            'rolLabel'       => 'Médico',
-            'formRoutes'     => [
+            'title'                      => 'Mi perfil',
+            'usuario'                    => $medico,
+            'rolLabel'                   => 'Médico',
+            'formRoutes'                 => [
                 'datos'    => route_to('medico_perfil_actualizar_datos'),
                 'password' => route_to('medico_perfil_actualizar_password'),
             ],
-            'errorsDatos'    => session()->getFlashdata('errors_datos') ?? [],
-            'errorsPassword' => session()->getFlashdata('errors_password') ?? [],
+            'errorsDatos'                => session()->getFlashdata('errors_datos') ?? [],
+            'errorsPassword'             => session()->getFlashdata('errors_password') ?? [],
+            'mostrarEspecialidadesForm'  => true,
+            'especialidadesDisponibles'  => $catalogoEspecialidades,
+            'especialidadesSeleccionadas'=> $especialidadesAsignadas,
+            'especialidadesFormRoute'    => route_to('medico_perfil_actualizar_especialidades'),
+            'errorsEspecialidades'       => $errorsEspecialidades,
         ]);
     }
 
@@ -132,6 +142,32 @@ class Perfil extends BaseController
         }
 
         session()->setFlashdata('success', 'Contraseña actualizada correctamente.');
+
+        return redirect()->route('medico_perfil_index');
+    }
+
+    public function actualizarEspecialidades()
+    {
+        $medico = $this->obtenerMedicoActual();
+
+        $especialidadesPost = $this->request->getPost('especialidades');
+        $idsSeleccionados   = is_array($especialidadesPost) ? $especialidadesPost : [];
+
+        try {
+            $this->perfilService->actualizarEspecialidades((int) $medico->id, $idsSeleccionados);
+        } catch (InvalidArgumentException $exception) {
+            return redirect()->back()->withInput()->with('errors_especialidades', [
+                'general' => 'Seleccioná especialidades válidas del catálogo.',
+            ]);
+        } catch (\Throwable $exception) {
+            log_message('error', 'Error al actualizar especialidades del médico: {exception}', ['exception' => $exception]);
+
+            return redirect()->back()->withInput()->with('errors_especialidades', [
+                'general' => 'No se pudieron actualizar las especialidades. Inténtalo nuevamente.',
+            ]);
+        }
+
+        session()->setFlashdata('success', 'Especialidades actualizadas correctamente.');
 
         return redirect()->route('medico_perfil_index');
     }

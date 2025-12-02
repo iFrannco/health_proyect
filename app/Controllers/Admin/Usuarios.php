@@ -7,6 +7,7 @@ use App\Entities\User;
 use App\Models\UserModel;
 use App\Services\PerfilUsuarioService;
 use CodeIgniter\Exceptions\PageNotFoundException;
+use InvalidArgumentException;
 
 class Usuarios extends BaseController
 {
@@ -170,6 +171,11 @@ class Usuarios extends BaseController
         $rolNombre      = (string) ($usuario->rol_nombre ?? ucfirst((string) ($usuario->rol_slug ?? 'Usuario')));
         $estaActivo     = (bool) ($usuario->activo ?? false);
 
+        $esMedico = ((string) ($usuario->rol_slug ?? '')) === UserModel::ROLE_MEDICO;
+        $especialidadesDisponibles  = $esMedico ? $this->perfilService->obtenerCatalogoEspecialidades() : [];
+        $especialidadesAsignadas    = $esMedico ? $this->perfilService->obtenerEspecialidadesAsignadas((int) $usuario->id, true) : [];
+        $errorsEspecialidades       = session()->getFlashdata('errors_especialidades') ?? [];
+
         $viewData = $this->layoutData() + [
             'title'               => 'Gestión de usuario',
             'usuario'             => $usuario,
@@ -182,6 +188,11 @@ class Usuarios extends BaseController
                 'password' => '#',
             ],
             'mostrarPasswordForm' => false,
+            'mostrarEspecialidadesForm' => $esMedico,
+            'especialidadesDisponibles' => $especialidadesDisponibles,
+            'especialidadesSeleccionadas' => $especialidadesAsignadas,
+            'especialidadesFormRoute' => route_to('admin_usuarios_especialidades', $usuarioId),
+            'errorsEspecialidades' => $errorsEspecialidades,
             'adminActions'        => [
                 'enabled'             => true,
                 'estadoActual'        => $estaActivo,
@@ -247,6 +258,38 @@ class Usuarios extends BaseController
         }
 
         session()->setFlashdata('success', 'Datos del usuario actualizados correctamente.');
+
+        return redirect()->route('admin_usuarios_edit', [$usuarioId]);
+    }
+
+    public function actualizarEspecialidades(int $usuarioId)
+    {
+        $usuario = $this->obtenerUsuarioConRol($usuarioId);
+
+        if ((string) ($usuario->rol_slug ?? '') !== UserModel::ROLE_MEDICO) {
+            return redirect()->back()->with('errors_especialidades', [
+                'general' => 'Solo se pueden gestionar especialidades para usuarios con rol médico.',
+            ]);
+        }
+
+        $especialidadesPost = $this->request->getPost('especialidades');
+        $idsSeleccionados   = is_array($especialidadesPost) ? $especialidadesPost : [];
+
+        try {
+            $this->perfilService->actualizarEspecialidades((int) $usuario->id, $idsSeleccionados, true);
+        } catch (InvalidArgumentException $exception) {
+            return redirect()->back()->withInput()->with('errors_especialidades', [
+                'general' => 'Seleccioná especialidades válidas del catálogo.',
+            ]);
+        } catch (\Throwable $exception) {
+            log_message('error', 'Error admin al actualizar especialidades del médico: {exception}', ['exception' => $exception]);
+
+            return redirect()->back()->withInput()->with('errors_especialidades', [
+                'general' => 'No se pudieron actualizar las especialidades. Inténtalo nuevamente.',
+            ]);
+        }
+
+        session()->setFlashdata('success', 'Especialidades actualizadas correctamente.');
 
         return redirect()->route('admin_usuarios_edit', [$usuarioId]);
     }
