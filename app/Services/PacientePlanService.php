@@ -121,10 +121,14 @@ class PacientePlanService
                 'pc.fecha_fin',
                 'pc.estado',
                 'pc.plan_estandar_id',
+                'pc.creador_user_id AS medico_id',
+                'medico.nombre AS medico_nombre',
+                'medico.apellido AS medico_apellido',
                 'diagnosticos.descripcion AS diagnostico_descripcion',
                 'diagnosticos.id AS diagnostico_id',
             ])
             ->join('diagnosticos', 'diagnosticos.id = pc.diagnostico_id', 'inner')
+            ->join('users AS medico', 'medico.id = pc.creador_user_id AND medico.deleted_at IS NULL', 'left')
             ->where('pc.id', $planId)
             ->where('diagnosticos.destinatario_user_id', $pacienteId)
             ->where('pc.deleted_at', null)
@@ -261,6 +265,9 @@ class PacientePlanService
                 'pc.fecha_fin',
                 'pc.fecha_creacion',
                 'pc.estado',
+                'pc.creador_user_id AS medico_id',
+                'medico.nombre AS medico_nombre',
+                'medico.apellido AS medico_apellido',
                 'diagnosticos.descripcion AS diagnostico_descripcion',
                 'COUNT(a.id) AS total_actividades',
                 "COALESCE(SUM(CASE WHEN estado_actividad.slug = 'pendiente' THEN 1 ELSE 0 END), 0) AS total_pendientes",
@@ -269,6 +276,7 @@ class PacientePlanService
                 "COALESCE(SUM(CASE WHEN a.validado = 1 THEN 1 ELSE 0 END), 0) AS total_validadas",
             ])
             ->join('diagnosticos', 'diagnosticos.id = pc.diagnostico_id', 'inner')
+            ->join('users AS medico', 'medico.id = pc.creador_user_id AND medico.deleted_at IS NULL', 'left')
             ->join('actividades AS a', 'a.plan_id = pc.id AND a.deleted_at IS NULL', 'left')
             ->join('estado_actividad', 'estado_actividad.id = a.estado_id', 'left')
             ->where('diagnosticos.destinatario_user_id', $pacienteId)
@@ -303,6 +311,13 @@ class PacientePlanService
             ? (int) round(($totalCompletadas / $totalActividades) * 100)
             : 0;
 
+        $medico = $this->formatearMedico(
+            $plan['medico_id'] ?? null,
+            $plan['medico_nombre'] ?? null,
+            $plan['medico_apellido'] ?? null,
+            $plan['medico_especialidad'] ?? null
+        );
+
         return [
             'id'                  => (int) $plan['id'],
             'nombre'              => $plan['nombre'] ?? null,
@@ -323,6 +338,10 @@ class PacientePlanService
             'porcentaje_completadas' => $porcentaje,
             'es_vigente'          => $estadoCategoria === self::FILTRO_ACTIVOS,
             'es_futuro'           => $estadoCategoria === self::FILTRO_FUTUROS,
+            'medico_id'           => $medico['id'],
+            'medico_nombre'       => $medico['nombre_completo'],
+            'medico_especialidad' => $medico['especialidad'],
+            'medico_disponible'   => $medico['disponible'],
         ];
     }
 
@@ -339,6 +358,13 @@ class PacientePlanService
 
         $estadoCategoria = $this->calcularCategoriaPlan($plan, $hoy, $fechaInicio, $fechaFin);
 
+        $medico = $this->formatearMedico(
+            $plan['medico_id'] ?? null,
+            $plan['medico_nombre'] ?? null,
+            $plan['medico_apellido'] ?? null,
+            $plan['medico_especialidad'] ?? null
+        );
+
         return [
             'id'              => (int) $plan['id'],
             'nombre'          => $plan['nombre'] ?? null,
@@ -352,6 +378,10 @@ class PacientePlanService
             'estado_categoria' => $estadoCategoria,
             'estado_etiqueta'   => $this->etiquetaParaCategoria($estadoCategoria),
             'metricas'          => $metricas,
+            'medico_id'         => $medico['id'],
+            'medico_nombre'     => $medico['nombre_completo'],
+            'medico_especialidad' => $medico['especialidad'],
+            'medico_disponible' => $medico['disponible'],
         ];
     }
 
@@ -723,5 +753,37 @@ class PacientePlanService
         }
 
         return $this->formatearActividad($actividad, $hoy);
+    }
+
+    /**
+     * @param mixed $id
+     * @param mixed $nombre
+     * @param mixed $apellido
+     * @param mixed $especialidad
+     *
+     * @return array{
+     *     id: ?int,
+     *     nombre: ?string,
+     *     apellido: ?string,
+     *     nombre_completo: ?string,
+     *     especialidad: ?string,
+     *     disponible: bool
+     * }
+     */
+    private function formatearMedico($id, $nombre, $apellido, $especialidad): array
+    {
+        $nombreStr       = trim((string) ($nombre ?? ''));
+        $apellidoStr     = trim((string) ($apellido ?? ''));
+        $nombreCompleto  = trim($nombreStr . ' ' . $apellidoStr);
+        $especialidadStr = trim((string) ($especialidad ?? ''));
+
+        return [
+            'id'              => $id !== null ? (int) $id : null,
+            'nombre'          => $nombreStr !== '' ? $nombreStr : null,
+            'apellido'        => $apellidoStr !== '' ? $apellidoStr : null,
+            'nombre_completo' => $nombreCompleto !== '' ? $nombreCompleto : null,
+            'especialidad'    => $especialidadStr !== '' ? $especialidadStr : null,
+            'disponible'      => $nombreCompleto !== '',
+        ];
     }
 }

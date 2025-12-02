@@ -69,6 +69,10 @@ $planesFiltrados = count($planes);
                 $diagnostico = 'Diagnóstico sin descripción';
             }
 
+            $medicoDisponible   = ! empty($plan['medico_disponible']);
+            $medicoNombre       = trim((string) ($plan['medico_nombre'] ?? ''));
+            $medicoEspecialidad = trim((string) ($plan['medico_especialidad'] ?? ''));
+
             $badgeClass = match ($plan['estado_categoria'] ?? '') {
                 'finalizados' => 'badge-success',
                 'futuros'     => 'badge-secondary',
@@ -95,6 +99,17 @@ $planesFiltrados = count($planes);
                         <p class="text-muted mb-2">
                             <i class="fas fa-stethoscope mr-1"></i>
                             <?= esc($diagnostico) ?>
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-user-md mr-1"></i>
+                            <?php if ($medicoDisponible && $medicoNombre !== ''): ?>
+                                <?= esc($medicoNombre) ?>
+                                <?php if ($medicoEspecialidad !== ''): ?>
+                                    <small class="text-muted">(<?= esc($medicoEspecialidad) ?>)</small>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <span class="text-muted">Médico responsable no disponible</span>
+                            <?php endif; ?>
                         </p>
                         <?php if ($descripcion !== ''): ?>
                             <p class="mb-3 text-truncate" title="<?= esc($descripcion) ?>">
