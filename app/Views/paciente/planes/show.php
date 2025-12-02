@@ -30,6 +30,9 @@ if ($diagnostico === '') {
 }
 
 $descripcion = trim((string) ($plan['descripcion'] ?? ''));
+$medicoDisponible = ! empty($plan['medico_disponible']);
+$medicoNombre = trim((string) ($plan['medico_nombre'] ?? ''));
+$medicoEspecialidad = trim((string) ($plan['medico_especialidad'] ?? ''));
 
 $badgeClass = match ($plan['estado_categoria'] ?? '') {
     'finalizados' => 'badge-success',
@@ -65,17 +68,28 @@ $fechasVigencia = sprintf(
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
                 <h6 class="text-muted text-uppercase mb-1">Vigencia</h6>
                 <p class="mb-0 font-weight-bold"><?= esc($fechasVigencia) ?></p>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
                 <h6 class="text-muted text-uppercase mb-1">Fecha de creación</h6>
                 <p class="mb-0"><?= esc($formatearFecha($plan['fecha_creacion'] ?? null, true)) ?></p>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
                 <h6 class="text-muted text-uppercase mb-1">Estado actual</h6>
                 <p class="mb-0"><?= esc($plan['estado_etiqueta'] ?? 'Activo') ?></p>
+            </div>
+            <div class="col-md-3 mb-3">
+                <h6 class="text-muted text-uppercase mb-1">Médico responsable</h6>
+                <?php if ($medicoDisponible && $medicoNombre !== ''): ?>
+                    <p class="mb-0 font-weight-bold"><?= esc($medicoNombre) ?></p>
+                    <?php if ($medicoEspecialidad !== ''): ?>
+                        <small class="text-muted"><?= esc($medicoEspecialidad) ?></small>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <p class="mb-0 text-muted">Médico responsable no disponible</p>
+                <?php endif; ?>
             </div>
             <div class="col-12">
                 <h6 class="text-muted text-uppercase mb-1">Descripción del plan</h6>
