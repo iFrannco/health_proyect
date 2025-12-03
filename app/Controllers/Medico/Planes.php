@@ -5,6 +5,7 @@ namespace App\Controllers\Medico;
 use App\Controllers\BaseController;
 use App\Entities\User;
 use App\Models\ActividadModel;
+use App\Models\CategoriaActividadModel;
 use App\Models\DiagnosticoModel;
 use App\Models\EstadoActividadModel;
 use App\Models\PlanCuidadoModel;
@@ -22,6 +23,7 @@ class Planes extends BaseController
     private PlanCuidadoModel $planCuidadoModel;
     private ActividadModel $actividadModel;
     private EstadoActividadModel $estadoActividadModel;
+    private CategoriaActividadModel $categoriaActividadModel;
     private UserModel $userModel;
 
     public function __construct()
@@ -30,6 +32,7 @@ class Planes extends BaseController
         $this->planCuidadoModel     = new PlanCuidadoModel();
         $this->actividadModel       = new ActividadModel();
         $this->estadoActividadModel = new EstadoActividadModel();
+        $this->categoriaActividadModel = new CategoriaActividadModel();
         $this->userModel            = new UserModel();
     }
 
@@ -145,12 +148,17 @@ class Planes extends BaseController
             ])
             ->orderBy('diagnosticos.fecha_creacion', 'DESC')
             ->findAll();
+        $categorias = $this->asegurarCategoriasAsignadas(
+            $this->categoriaActividadModel->findActivas(),
+            []
+        );
 
         $data = [
             'title'                    => 'Nuevo plan personalizado',
             'medico'                   => $medico,
             'pacientes'                => [],
             'diagnosticos'             => $diagnosticos,
+            'categoriasActividad'      => $categorias,
             'pacienteSeleccionado'     => $pacienteSeleccionado,
             'terminoBusquedaPaciente'  => old('busqueda_paciente', ''),
             'errors'                   => session()->getFlashdata('errors') ?? [],
@@ -260,15 +268,16 @@ class Planes extends BaseController
 
             foreach ($actividadesData['actividades'] as $actividad) {
                 $actividadPayload = [
-                    'plan_id'        => $planId,
-                    'nombre'         => $actividad['nombre'],
-                    'descripcion'    => $actividad['descripcion'],
-                    'fecha_creacion' => date('Y-m-d H:i:s'),
-                    'fecha_inicio'   => $actividad['fecha_inicio'],
-                    'fecha_fin'      => $actividad['fecha_fin'],
-                    'estado_id'      => $estadoPendiente['id'],
-                    'validado'       => null,
-                    'fecha_validacion'     => null,
+                    'plan_id'                => $planId,
+                    'nombre'                 => $actividad['nombre'],
+                    'descripcion'            => $actividad['descripcion'],
+                    'fecha_creacion'         => date('Y-m-d H:i:s'),
+                    'fecha_inicio'           => $actividad['fecha_inicio'],
+                    'fecha_fin'              => $actividad['fecha_fin'],
+                    'estado_id'              => $estadoPendiente['id'],
+                    'categoria_actividad_id' => $actividad['categoria_actividad_id'],
+                    'validado'               => null,
+                    'fecha_validacion'       => null,
                 ];
 
                 if ($this->actividadModel->insert($actividadPayload) === false) {
@@ -435,6 +444,10 @@ class Planes extends BaseController
         }
 
         $actividades = $this->actividadModel->findPorPlanConEstado($plan['id']);
+        $categorias  = $this->asegurarCategoriasAsignadas(
+            $this->categoriaActividadModel->findActivas(),
+            $actividades
+        );
 
         $data = [
             'title'           => 'Editar plan personalizado',
@@ -450,6 +463,7 @@ class Planes extends BaseController
                 ])
                 ->orderBy('diagnosticos.fecha_creacion', 'DESC')
                 ->findAll(),
+            'categoriasActividad' => $categorias,
             'errors'          => session()->getFlashdata('errors') ?? [],
             'actividadErrors' => session()->getFlashdata('actividad_errors') ?? [],
         ];
@@ -562,10 +576,11 @@ class Planes extends BaseController
                     $idsPersistidos[] = $actividadId;
                     $actividadEntity = $actividadesPorId[$actividadId] ?? null;
                     $payload = [
-                        'nombre'       => $actividadInput['nombre'],
-                        'descripcion'  => $actividadInput['descripcion'],
-                        'fecha_inicio' => $actividadInput['fecha_inicio'],
-                        'fecha_fin'    => $actividadInput['fecha_fin'],
+                        'nombre'                 => $actividadInput['nombre'],
+                        'descripcion'            => $actividadInput['descripcion'],
+                        'fecha_inicio'           => $actividadInput['fecha_inicio'],
+                        'fecha_fin'              => $actividadInput['fecha_fin'],
+                        'categoria_actividad_id' => $actividadInput['categoria_actividad_id'],
                     ];
 
                     if ($actividadEntity !== null) {
@@ -584,7 +599,26 @@ class Planes extends BaseController
                             || (string) $actividadEntity->descripcion !== $actividadInput['descripcion']
                             || (string) $fechaInicioOriginal !== $actividadInput['fecha_inicio']
                             || (string) $fechaFinOriginal !== $actividadInput['fecha_fin']
+                            || (int) $actividadEntity->categoria_actividad_id !== (int) $actividadInput['categoria_actividad_id']
                         );
+
+                        $cambioSoloCategoria = (int) $actividadEntity->categoria_actividad_id !== (int) $actividadInput['categoria_actividad_id'];
+
+                        if ($cambioSoloCategoria && $actividadEntity->validado === true) {
+                            $db->transRollback();
+
+                            $erroresCategoria = [
+                                $actividadInput['indice'] ?? 0 => [
+                                    'categoria' => 'No puedes cambiar la categoría de una actividad ya validada.',
+                                ],
+                            ];
+
+                            return $this->redirectBackWithActividadErrors(
+                                'No se pudo actualizar el plan.',
+                                ['Las actividades validadas mantienen su categoría.'],
+                                $erroresCategoria + $actividadesData['erroresPorIndice']
+                            );
+                        }
 
                         if ($haCambiado && $actividadEntity->validado === true) {
                             $payload['validado'] = null;
@@ -608,6 +642,7 @@ class Planes extends BaseController
                     'fecha_inicio'   => $actividadInput['fecha_inicio'],
                     'fecha_fin'      => $actividadInput['fecha_fin'],
                     'estado_id'      => $estadoPendiente['id'],
+                    'categoria_actividad_id' => $actividadInput['categoria_actividad_id'],
                     'validado'       => null,
                     'fecha_validacion'     => null,
                 ];
@@ -700,13 +735,28 @@ class Planes extends BaseController
         $descripciones = (array) $this->request->getPost('actividad_descripcion');
         $fechasInicio  = (array) $this->request->getPost('actividad_fecha_inicio');
         $fechasFin     = (array) $this->request->getPost('actividad_fecha_fin');
+        $categoriasIds = (array) $this->request->getPost('actividad_categoria_id');
         $ids           = (array) $this->request->getPost('actividad_id');
 
         $actividades       = [];
         $erroresGenerales  = [];
         $erroresPorIndice  = [];
 
-        $total = max(count($nombres), count($descripciones), count($fechasInicio), count($fechasFin));
+        $categoriasActivas = $this->categoriaActividadModel->findActivas();
+        $categoriasActivasIds = array_column($categoriasActivas, 'id');
+        $categoriasActivasLookup = array_fill_keys(array_map('intval', $categoriasActivasIds), true);
+
+        if (empty($categoriasActivasLookup)) {
+            $erroresGenerales[] = 'No hay categorías de actividad activas disponibles. Contacta al administrador.';
+
+            return [
+                'actividades'      => [],
+                'erroresGenerales' => $erroresGenerales,
+                'erroresPorIndice' => $erroresPorIndice,
+            ];
+        }
+
+        $total = max(count($nombres), count($descripciones), count($fechasInicio), count($fechasFin), count($categoriasIds));
         $total = max($total, count($ids));
         if ($total === 0) {
             $erroresGenerales[] = 'Debes agregar al menos una actividad al plan.';
@@ -723,6 +773,9 @@ class Planes extends BaseController
             $descripcion = trim($descripciones[$index] ?? '');
             $fechaInicio = $fechasInicio[$index] ?? '';
             $fechaFin    = $fechasFin[$index] ?? '';
+            $categoriaId = isset($categoriasIds[$index]) && $categoriasIds[$index] !== ''
+                ? (int) $categoriasIds[$index]
+                : 0;
             $actividadId = isset($ids[$index]) && $ids[$index] !== ''
                 ? (int) $ids[$index]
                 : null;
@@ -761,6 +814,12 @@ class Planes extends BaseController
                 $erroresFila['fecha_fin'] = 'La fecha de fin debe estar dentro del período del plan.';
             }
 
+            if ($categoriaId <= 0) {
+                $erroresFila['categoria'] = 'La categoría es obligatoria.';
+            } elseif (! isset($categoriasActivasLookup[$categoriaId])) {
+                $erroresFila['categoria'] = 'Selecciona una categoría válida.';
+            }
+
             if (! empty($erroresFila)) {
                 $erroresPorIndice[$index] = $erroresFila;
 
@@ -768,11 +827,13 @@ class Planes extends BaseController
             }
 
             $actividades[] = [
-                'id'           => $actividadId,
-                'nombre'       => $nombre,
-                'descripcion'  => $descripcion,
-                'fecha_inicio' => $fechaInicio,
-                'fecha_fin'    => $fechaFin,
+                'id'                     => $actividadId,
+                'indice'                 => $index,
+                'nombre'                 => $nombre,
+                'descripcion'            => $descripcion,
+                'fecha_inicio'           => $fechaInicio,
+                'fecha_fin'              => $fechaFin,
+                'categoria_actividad_id' => $categoriaId,
             ];
         }
 
@@ -1028,13 +1089,18 @@ class Planes extends BaseController
                 'a.id',
                 'a.plan_id',
                 'a.estado_id',
+                'a.categoria_actividad_id',
                 'a.validado',
                 'a.fecha_validacion',
                 'planes_cuidado.creador_user_id',
                 'estado_actividad.slug AS estado_slug',
+                'estado_actividad.nombre AS estado_nombre',
+                'categoria_actividad.nombre AS categoria_nombre',
+                'categoria_actividad.color_hex AS categoria_color',
             ])
             ->join('planes_cuidado', 'planes_cuidado.id = a.plan_id', 'inner')
             ->join('estado_actividad', 'estado_actividad.id = a.estado_id', 'left')
+            ->join('categoria_actividad', 'categoria_actividad.id = a.categoria_actividad_id', 'left')
             ->where('a.id', $actividadId)
             ->where('a.deleted_at', null)
             ->where('planes_cuidado.deleted_at', null)
@@ -1113,6 +1179,9 @@ class Planes extends BaseController
             'estado_id'            => isset($actividad['estado_id']) ? (int) $actividad['estado_id'] : null,
             'estado_slug'          => $actividad['estado_slug'] ?? null,
             'estado_nombre'        => $actividad['estado_nombre'] ?? null,
+            'categoria_actividad_id' => isset($actividad['categoria_actividad_id']) ? (int) $actividad['categoria_actividad_id'] : null,
+            'categoria_nombre'      => $actividad['categoria_nombre'] ?? null,
+            'categoria_color'       => $actividad['categoria_color'] ?? null,
             'validado'             => $validadoNormalizado,
             'fecha_validacion'     => $actividad['fecha_validacion'] ?? null,
         ];
@@ -1169,6 +1238,55 @@ class Planes extends BaseController
         $session->set('user_id', $medico->id);
 
         return $medico;
+    }
+
+    /**
+     * Incluye en el catálogo las categorías actualmente asignadas (aunque estén inactivas) para evitar perder referencia al editar.
+     *
+     * @param array<int, array<string, mixed>> $categorias
+     * @param array<int, array<string, mixed>> $actividades
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function asegurarCategoriasAsignadas(array $categorias, array $actividades): array
+    {
+        $categoriasPorId = [];
+        foreach ($categorias as $categoria) {
+            $id = (int) ($categoria['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+
+            $categoriasPorId[$id] = $categoria;
+        }
+
+        $idsEnActividades = array_unique(array_filter(array_map(static function (array $actividad): int {
+            return isset($actividad['categoria_actividad_id']) ? (int) $actividad['categoria_actividad_id'] : 0;
+        }, $actividades)));
+
+        $faltantes = array_diff($idsEnActividades, array_keys($categoriasPorId));
+
+        if (! empty($faltantes)) {
+            $extras = $this->categoriaActividadModel
+                ->asArray()
+                ->whereIn('id', $faltantes)
+                ->findAll();
+
+            foreach ($extras as $extra) {
+                $id = (int) ($extra['id'] ?? 0);
+                if ($id <= 0) {
+                    continue;
+                }
+
+                $categoriasPorId[$id] = $extra;
+            }
+        }
+
+        usort($categoriasPorId, static function (array $a, array $b): int {
+            return strcmp($a['nombre'] ?? '', $b['nombre'] ?? '');
+        });
+
+        return array_values($categoriasPorId);
     }
 
     private function redirectBackWithErrors(string $mensaje, array $errores)

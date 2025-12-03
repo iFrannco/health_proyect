@@ -155,8 +155,12 @@ class PacientePlanService
                 'a.fecha_validacion',
                 'estado_actividad.slug AS estado_slug',
                 'estado_actividad.nombre AS estado_nombre',
+                'a.categoria_actividad_id',
+                'categoria_actividad.nombre AS categoria_nombre',
+                'categoria_actividad.color_hex AS categoria_color',
             ])
             ->join('estado_actividad', 'estado_actividad.id = a.estado_id', 'left')
+            ->join('categoria_actividad', 'categoria_actividad.id = a.categoria_actividad_id', 'left')
             ->where('a.plan_id', $planId)
             ->where('a.deleted_at', null)
             ->orderBy('a.fecha_inicio', 'ASC')
@@ -429,6 +433,9 @@ class PacientePlanService
             'puede_marcar'           => $puedeMarcar,
             'puede_desmarcar'        => $esCompletada,
             'bloqueo_motivo'         => $bloqueoMotivo,
+            'categoria_actividad_id' => isset($actividad['categoria_actividad_id']) ? (int) $actividad['categoria_actividad_id'] : null,
+            'categoria_nombre'       => $actividad['categoria_nombre'] ?? null,
+            'categoria_color'        => $actividad['categoria_color'] ?? null,
         ];
     }
 

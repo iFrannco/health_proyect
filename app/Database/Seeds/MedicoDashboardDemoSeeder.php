@@ -72,6 +72,34 @@ class MedicoDashboardDemoSeeder extends Seeder
             }
         }
 
+        $categorias = $db->table('categoria_actividad')
+            ->select('id, nombre')
+            ->where('activo', 1)
+            ->orderBy('id', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        $categoriaIds = array_map(static fn ($categoria) => (int) ($categoria['id'] ?? 0), $categorias);
+        $categoriaDefaultId = null;
+        foreach ($categorias as $categoria) {
+            if (isset($categoria['id']) && (int) $categoria['id'] === 1) {
+                $categoriaDefaultId = 1;
+                break;
+            }
+        }
+        if ($categoriaDefaultId === null && ! empty($categoriaIds)) {
+            $categoriaDefaultId = $categoriaIds[0];
+        }
+        $categoriaDefaultId = $categoriaDefaultId ?? 1;
+
+        $categoriaPorIndice = static function (int $indice) use ($categoriaIds, $categoriaDefaultId): int {
+            if (empty($categoriaIds)) {
+                return $categoriaDefaultId;
+            }
+
+            return $categoriaIds[$indice % count($categoriaIds)];
+        };
+
         $ahora = new DateTimeImmutable('now');
         $nowStr = $ahora->format('Y-m-d H:i:s');
 
@@ -335,6 +363,7 @@ class MedicoDashboardDemoSeeder extends Seeder
                             'fecha_inicio'   => $fechaInicioAct,
                             'fecha_fin'      => $fechaFinAct,
                             'estado_id'      => $estadoActividadPorSlug[$actividad['estado_slug']],
+                            'categoria_actividad_id' => $categoriaPorIndice($actividadIndice),
                             'validado'       => $actividad['validado'] ? 1 : null,
                             'created_at'     => $fechaCreacionActividad,
                             'updated_at'     => $nowStr,
@@ -453,7 +482,7 @@ class MedicoDashboardDemoSeeder extends Seeder
 
             $planId = (int) $db->insertID();
 
-            foreach ($planAutocuidado['actividades'] as $actividad) {
+            foreach ($planAutocuidado['actividades'] as $actividadIndice => $actividad) {
                 $fechaInicioAct = $actividad['fecha_inicio'] instanceof \DateTimeInterface
                     ? $actividad['fecha_inicio']->format('Y-m-d')
                     : $fechaInicio;
@@ -473,6 +502,7 @@ class MedicoDashboardDemoSeeder extends Seeder
                     'fecha_inicio'   => $fechaInicioAct,
                     'fecha_fin'      => $fechaFinAct,
                     'estado_id'      => $estadoActividadPorSlug[$actividad['estado_slug']],
+                    'categoria_actividad_id' => $categoriaPorIndice($actividadIndice),
                     'validado'       => ! empty($actividad['validado']) ? 1 : null,
                     'created_at'     => $fechaCreacionActividad,
                     'updated_at'     => $nowStr,

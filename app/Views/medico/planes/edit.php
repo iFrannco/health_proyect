@@ -47,6 +47,7 @@ if ($planTitulo === '') {
             'plan'            => $plan,
             'pacientes'       => $pacientes,
             'diagnosticos'    => $diagnosticos,
+            'categoriasActividad' => $categoriasActividad ?? [],
             'errors'          => $errores,
             'actividadErrors' => $actividadErrors,
             'actividades'     => $actividades,

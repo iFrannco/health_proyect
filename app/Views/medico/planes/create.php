@@ -36,6 +36,7 @@ $actividadErrors = $actividadErrors ?? [];
             'plan'            => [],
             'pacientes'       => $pacientes,
             'diagnosticos'    => $diagnosticos,
+            'categoriasActividad' => $categoriasActividad ?? [],
             'errors'          => $errores,
             'actividadErrors' => $actividadErrors,
             'actividades'     => [],

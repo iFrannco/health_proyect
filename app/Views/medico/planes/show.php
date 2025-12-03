@@ -225,6 +225,7 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                                 <tr>
                                     <th scope="col">Nombre</th>
                                     <th scope="col">Descripción</th>
+                                    <th scope="col">Categoría</th>
                                     <th scope="col" class="text-nowrap">Inicio</th>
                                     <th scope="col" class="text-nowrap">Fin</th>
                                     <th scope="col">Estado</th>
@@ -263,6 +264,14 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                                     $comentarioPaciente = trim((string) ($actividad['paciente_comentario'] ?? ''));
                                     $tieneComentario    = $comentarioPaciente !== '';
                                     $comentarioBtnClass = $tieneComentario ? 'btn-outline-info' : 'btn-outline-secondary';
+                                    $categoriaNombre    = trim((string) ($actividad['categoria_nombre'] ?? ''));
+                                    $categoriaColor     = $actividad['categoria_color'] ?? '#6c757d';
+                                    $categoriaColorValido = (is_string($categoriaColor) && preg_match('/^#[0-9A-Fa-f]{6}$/', $categoriaColor)) ? $categoriaColor : '#6c757d';
+                                    $categoriaEstilo    = sprintf(
+                                        'border:1px solid %s;color:%s;background-color:#fff;',
+                                        $categoriaColorValido,
+                                        $categoriaColorValido
+                                    );
                                     ?>
                                     <tr data-actividad-id="<?= esc((string) $actividadId) ?>"
                                         data-estado="<?= esc($estadoSlug) ?>"
@@ -271,6 +280,11 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                                         data-comentario="<?= esc($comentarioPaciente, 'attr') ?>">
                                         <td><?= esc($actividad['nombre'] ?? 'Actividad') ?></td>
                                         <td><?= esc($descripcion) ?></td>
+                                        <td>
+                                            <span class="badge badge-light" style="<?= esc($categoriaEstilo, 'attr') ?>">
+                                                <?= esc($categoriaNombre !== '' ? $categoriaNombre : 'Sin categoría') ?>
+                                            </span>
+                                        </td>
                                         <td class="text-nowrap"><?= esc($formatearFecha($actividad['fecha_inicio'] ?? null)) ?></td>
                                         <td class="text-nowrap"><?= esc($formatearFecha($actividad['fecha_fin'] ?? null)) ?></td>
                                         <td>

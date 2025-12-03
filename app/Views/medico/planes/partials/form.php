@@ -10,6 +10,7 @@ $diagnosticos    = $diagnosticos ?? [];
 $errores         = $errors ?? [];
 $actividadErrors = $actividadErrors ?? [];
 $actividades     = $actividades ?? [];
+$categoriasActividad = $categoriasActividad ?? [];
 $pacienteSeleccionado = $pacienteSeleccionado ?? null;
 $terminoBusquedaPaciente = $terminoBusquedaPaciente ?? '';
 
@@ -33,6 +34,7 @@ $oldNombres       = (array) old('actividad_nombre');
 $oldDescripciones = (array) old('actividad_descripcion');
 $oldFechasInicio  = (array) old('actividad_fecha_inicio');
 $oldFechasFin     = (array) old('actividad_fecha_fin');
+$oldCategorias    = (array) old('actividad_categoria_id');
 $oldIds           = (array) old('actividad_id');
 
 $actividadesForm = [];
@@ -43,8 +45,19 @@ $hayOld = count($oldNombres) > 0
     || count($oldFechasFin) > 0
     || count($oldIds) > 0;
 
+$categoriaDefaultId = '';
+foreach ($categoriasActividad as $categoria) {
+    if ((int) ($categoria['id'] ?? 0) === 1) {
+        $categoriaDefaultId = 1;
+        break;
+    }
+}
+if ($categoriaDefaultId === '' && ! empty($categoriasActividad)) {
+    $categoriaDefaultId = (int) ($categoriasActividad[0]['id'] ?? '');
+}
+
 if ($hayOld) {
-    $max = max(count($oldNombres), count($oldDescripciones), count($oldFechasInicio), count($oldFechasFin), count($oldIds));
+    $max = max(count($oldNombres), count($oldDescripciones), count($oldFechasInicio), count($oldFechasFin), count($oldCategorias), count($oldIds));
 
     for ($index = 0; $index < $max; $index++) {
         $actividadesForm[] = [
@@ -53,6 +66,7 @@ if ($hayOld) {
             'descripcion'  => $oldDescripciones[$index] ?? '',
             'fecha_inicio' => $oldFechasInicio[$index] ?? '',
             'fecha_fin'    => $oldFechasFin[$index] ?? '',
+            'categoria_actividad_id' => $oldCategorias[$index] ?? $categoriaDefaultId,
         ];
     }
 } elseif (! empty($actividades)) {
@@ -63,6 +77,7 @@ if ($hayOld) {
             'descripcion'  => $actividad['descripcion'] ?? '',
             'fecha_inicio' => $actividad['fecha_inicio'] ?? '',
             'fecha_fin'    => $actividad['fecha_fin'] ?? '',
+            'categoria_actividad_id' => $actividad['categoria_actividad_id'] ?? $categoriaDefaultId,
         ];
     }
 }
@@ -74,6 +89,7 @@ if (empty($actividadesForm)) {
         'descripcion'  => '',
         'fecha_inicio' => '',
         'fecha_fin'    => '',
+        'categoria_actividad_id' => $categoriaDefaultId,
     ];
 }
 
@@ -267,6 +283,24 @@ $diagnosticoDeshabilitado = ! $selectedPacienteId;
                                 <?php endif; ?>
                             </div>
                         </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Categoría <span class="text-danger">*</span></label>
+                                <select name="actividad_categoria_id[]"
+                                        class="form-control <?= isset($erroresFila['categoria']) ? 'is-invalid' : '' ?>">
+                                    <option value="">Selecciona una categoría</option>
+                                    <?php foreach ($categoriasActividad as $categoria): ?>
+                                        <?php $selected = (int) ($actividad['categoria_actividad_id'] ?? 0) === (int) ($categoria['id'] ?? 0); ?>
+                                        <option value="<?= esc($categoria['id']) ?>" <?= $selected ? 'selected' : '' ?>>
+                                            <?= esc($categoria['nombre'] ?? '') ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <?php if (isset($erroresFila['categoria'])): ?>
+                                    <div class="invalid-feedback"><?= esc($erroresFila['categoria']) ?></div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label>Descripción <span class="text-danger">*</span></label>
                             <textarea name="actividad_descripcion[]" rows="3" maxlength="2000"
@@ -320,6 +354,18 @@ $diagnosticoDeshabilitado = ! $selectedPacienteId;
                 <div class="form-group col-md-3">
                     <label>Fecha fin <span class="text-danger">*</span></label>
                     <input type="date" name="actividad_fecha_fin[]" class="form-control">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Categoría <span class="text-danger">*</span></label>
+                    <select name="actividad_categoria_id[]" class="form-control">
+                        <option value="">Selecciona una categoría</option>
+                        <?php foreach ($categoriasActividad as $categoria): ?>
+                            <?php $selected = $categoriaDefaultId !== '' && (int) $categoriaDefaultId === (int) ($categoria['id'] ?? 0); ?>
+                            <option value="<?= esc($categoria['id']) ?>" <?= $selected ? 'selected' : '' ?>><?= esc($categoria['nombre'] ?? '') ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
             <div class="form-group">

@@ -19,6 +19,7 @@ class ActividadModel extends Model
         'fecha_inicio',
         'fecha_fin',
         'estado_id',
+        'categoria_actividad_id',
         'validado',
         'paciente_comentario',
         'paciente_completada_en',
@@ -35,6 +36,7 @@ class ActividadModel extends Model
         'fecha_inicio' => 'required',
         'fecha_fin'    => 'required',
         'estado_id'    => 'required|is_natural_no_zero',
+        'categoria_actividad_id' => 'required|is_natural_no_zero',
     ];
 
     /**
@@ -52,14 +54,18 @@ class ActividadModel extends Model
                 'actividades.fecha_inicio',
                 'actividades.fecha_fin',
                 'actividades.estado_id',
+                'actividades.categoria_actividad_id',
                 'actividades.validado',
                 'actividades.paciente_comentario',
                 'actividades.paciente_completada_en',
                 'actividades.fecha_validacion',
                 'estado_actividad.nombre AS estado_nombre',
                 'estado_actividad.slug AS estado_slug',
+                'categoria_actividad.nombre AS categoria_nombre',
+                'categoria_actividad.color_hex AS categoria_color',
             ])
             ->join('estado_actividad', 'estado_actividad.id = actividades.estado_id', 'left')
+            ->join('categoria_actividad', 'categoria_actividad.id = actividades.categoria_actividad_id', 'left')
             ->where('actividades.plan_id', $planId)
             ->orderBy('actividades.fecha_inicio', 'ASC')
             ->orderBy('actividades.id', 'ASC')

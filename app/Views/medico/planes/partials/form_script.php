@@ -233,12 +233,13 @@
         }
 
         function limpiarActividadCampos(actividad) {
-            actividad.querySelectorAll('input, textarea').forEach((campo) => {
-                if (campo.type === 'hidden') {
-                    campo.value = '';
-                } else {
-                    campo.value = '';
+            actividad.querySelectorAll('input, textarea, select').forEach((campo) => {
+                if (campo.tagName === 'SELECT') {
+                    campo.selectedIndex = 0;
+                    return;
                 }
+
+                campo.value = '';
             });
         }
 

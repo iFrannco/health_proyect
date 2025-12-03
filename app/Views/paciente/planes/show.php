@@ -149,6 +149,7 @@ $fechasVigencia = sprintf(
                 <tr>
                     <th>Actividad</th>
                     <th>Fechas</th>
+                    <th>Categoría</th>
                     <th>Estado</th>
                     <th>Validación</th>
                     <th>Comentario del paciente</th>
@@ -158,7 +159,7 @@ $fechasVigencia = sprintf(
                 <tbody>
                 <?php if (empty($actividades)): ?>
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="7" class="text-center text-muted py-4">
                             No hay actividades registradas en este plan.
                         </td>
                     </tr>
@@ -179,6 +180,9 @@ $fechasVigencia = sprintf(
                         $validado = ! empty($actividad['validado']);
                         $validadoBadge = $validado ? 'badge-success' : 'badge-warning';
                         $validadoTexto = $validado ? 'Validada' : 'Pendiente';
+                        $categoriaColor = $actividad['categoria_color'] ?? '#6c757d';
+                        $categoriaColorValido = (is_string($categoriaColor) && preg_match('/^#[0-9A-Fa-f]{6}$/', $categoriaColor)) ? $categoriaColor : '#6c757d';
+                        $categoriaNombre = trim((string) ($actividad['categoria_nombre'] ?? ''));
                         ?>
                         <tr data-actividad-id="<?= esc($actividadId) ?>">
                             <td>
@@ -200,6 +204,11 @@ $fechasVigencia = sprintf(
                                 <?php else: ?>
                                     <div class="small text-muted mt-1" data-role="completada-en"></div>
                                 <?php endif; ?>
+                            </td>
+                            <td>
+                                <span class="badge badge-light" style="border:1px solid <?= esc($categoriaColorValido, 'attr') ?>; color: <?= esc($categoriaColorValido, 'attr') ?>; background-color:#fff;">
+                                    <?= esc($categoriaNombre !== '' ? $categoriaNombre : 'Sin categoría') ?>
+                                </span>
                             </td>
                             <td>
                                 <span class="badge <?= esc($estadoBadge) ?>" data-role="estado">
@@ -412,6 +421,9 @@ $fechasVigencia = sprintf(
 
         var validado = actividad.validado ? 'Validada' : 'Pendiente';
         var validadoBadge = actividad.validado ? 'badge-success' : 'badge-warning';
+        var categoriaNombre = actividad.categoria_nombre || 'Sin categoría';
+        var categoriaColor = actividad.categoria_color || '#6c757d';
+        var categoriaColorValido = /^#[0-9A-Fa-f]{6}$/.test(String(categoriaColor)) ? categoriaColor : '#6c757d';
 
         return '' +
             '<tr data-actividad-id="' + actividad.id + '">' +
@@ -424,6 +436,11 @@ $fechasVigencia = sprintf(
                 '<div><i class="far fa-calendar-alt mr-1"></i>Inicio: ' + escapeHtml(formatearFecha(actividad.fecha_inicio)) + '</div>' +
                 '<div><i class="far fa-calendar-check mr-1"></i>Fin: ' + escapeHtml(formatearFecha(actividad.fecha_fin)) + '</div>' +
                 completada +
+            '</td>' +
+            '<td>' +
+                '<span class="badge badge-light" style="border:1px solid ' + escapeHtml(categoriaColorValido) + '; color:' + escapeHtml(categoriaColorValido) + '; background-color:#fff;">' +
+                    escapeHtml(categoriaNombre) +
+                '</span>' +
             '</td>' +
             '<td>' +
                 '<span class="badge ' + badgeEstadoClase(actividad.estado_slug) + '" data-role="estado">' +

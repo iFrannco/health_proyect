@@ -21,6 +21,7 @@ class Actividad extends Entity
         'id' => 'integer',
         'plan_id' => 'integer',
         'estado_id' => 'integer',
+        'categoria_actividad_id' => 'integer',
         'validado' => '?boolean',
     ];
 
