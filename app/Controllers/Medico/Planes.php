@@ -11,6 +11,7 @@ use App\Models\EstadoActividadModel;
 use App\Models\PlanCuidadoModel;
 use App\Models\UserModel;
 use App\Exceptions\PageForbiddenException;
+use App\Services\PlanEstadoService;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 use CodeIgniter\Database\Exceptions\DataException;
 use CodeIgniter\Exceptions\PageNotFoundException;
@@ -246,6 +247,8 @@ class Planes extends BaseController
             return $this->redirectBackWithErrors('No se encontró el estado inicial de actividades. Contacta al administrador.', []);
         }
 
+        $estadoPlan = PlanEstadoService::calcular(null, $fechaInicio, $fechaFin);
+
         $planData = [
             'diagnostico_id' => $diagnosticoId,
             'creador_user_id' => $medico->id,
@@ -255,6 +258,7 @@ class Planes extends BaseController
             'fecha_creacion' => date('Y-m-d H:i:s'),
             'fecha_inicio'   => $fechaInicio,
             'fecha_fin'      => $fechaFin,
+            'estado'         => $estadoPlan['estado'],
         ];
 
         $db = $this->planCuidadoModel->db;
@@ -318,6 +322,15 @@ class Planes extends BaseController
             return $this->planNoDisponibleRedirect();
         }
 
+        $estadoPlan = PlanEstadoService::calcular(
+            $plan['estado'] ?? null,
+            $plan['fecha_inicio'] ?? null,
+            $plan['fecha_fin'] ?? null
+        );
+        $plan['estado']             = $estadoPlan['estado'];
+        $plan['estado_etiqueta']    = $estadoPlan['etiqueta'];
+        $plan['se_puede_finalizar'] = $estadoPlan['sePuedeFinalizar'];
+
         $actividades     = $this->actividadModel->findPorPlanConEstado($plan['id']);
         $estadosCatalogo = $this->estadoActividadModel->findActivos();
         $resumen         = $this->construirResumenActividades($actividades, $estadosCatalogo);
@@ -329,6 +342,7 @@ class Planes extends BaseController
             'actividades'  => $actividades,
             'resumen'      => $resumen,
             'estados'      => $estadosCatalogo,
+            'planEstado'   => $estadoPlan,
         ];
 
         return view('medico/planes/show', $this->layoutData() + $data);
@@ -443,6 +457,18 @@ class Planes extends BaseController
             return $this->planNoDisponibleRedirect();
         }
 
+        $estadoPlan = PlanEstadoService::calcular(
+            $plan['estado'] ?? null,
+            $plan['fecha_inicio'] ?? null,
+            $plan['fecha_fin'] ?? null
+        );
+
+        if ($estadoPlan['estado'] === PlanEstadoService::ESTADO_FINALIZADO) {
+            session()->setFlashdata('error', 'No puedes editar un plan finalizado.');
+
+            return redirect()->to(route_to('medico_planes_show', $plan['id']));
+        }
+
         $actividades = $this->actividadModel->findPorPlanConEstado($plan['id']);
         $categorias  = $this->asegurarCategoriasAsignadas(
             $this->categoriaActividadModel->findActivas(),
@@ -478,6 +504,18 @@ class Planes extends BaseController
 
         if ($plan === null) {
             return $this->planNoDisponibleRedirect();
+        }
+
+        $estadoPlan = PlanEstadoService::calcular(
+            $plan['estado'] ?? null,
+            $plan['fecha_inicio'] ?? null,
+            $plan['fecha_fin'] ?? null
+        );
+
+        if ($estadoPlan['estado'] === PlanEstadoService::ESTADO_FINALIZADO) {
+            session()->setFlashdata('error', 'No puedes editar un plan finalizado.');
+
+            return redirect()->to(route_to('medico_planes_show', $plan['id']));
         }
 
         $rules = [
@@ -556,11 +594,13 @@ class Planes extends BaseController
         $db->transBegin();
 
         try {
+            $estadoRecalculado = PlanEstadoService::calcular(null, $fechaInicio, $fechaFin);
             $planPayload = [
                 'nombre'      => $this->request->getPost('nombre') ?: null,
                 'descripcion' => $this->request->getPost('descripcion') ?: null,
                 'fecha_inicio'=> $fechaInicio,
                 'fecha_fin'   => $fechaFin,
+                'estado'      => $estadoRecalculado['estado'],
             ];
 
             if ($this->planCuidadoModel->update($plan['id'], $planPayload) === false) {
@@ -686,6 +726,38 @@ class Planes extends BaseController
         return redirect()->to(route_to('medico_planes_show', $plan['id']));
     }
 
+    public function finalizar(int $planId)
+    {
+        $medico = $this->obtenerMedicoActual();
+        $plan   = $this->findPlanDetalleParaMedico($planId, $medico->id);
+
+        if ($plan === null) {
+            return $this->planNoDisponibleRedirect();
+        }
+
+        $estadoPlan = PlanEstadoService::calcular(
+            $plan['estado'] ?? null,
+            $plan['fecha_inicio'] ?? null,
+            $plan['fecha_fin'] ?? null
+        );
+
+        if ($estadoPlan['estado'] === PlanEstadoService::ESTADO_FINALIZADO) {
+            session()->setFlashdata('info', 'El plan ya está finalizado.');
+
+            return redirect()->to(route_to('medico_planes_show', $plan['id']));
+        }
+
+        if ($this->planCuidadoModel->update($plan['id'], ['estado' => PlanEstadoService::ESTADO_FINALIZADO]) === false) {
+            session()->setFlashdata('error', 'No se pudo finalizar el plan. Inténtalo nuevamente.');
+
+            return redirect()->to(route_to('medico_planes_show', $plan['id']));
+        }
+
+        session()->setFlashdata('success', 'Plan finalizado con éxito.');
+
+        return redirect()->to(route_to('medico_planes_show', $plan['id']));
+    }
+
     public function delete(int $planId)
     {
         $medico = $this->obtenerMedicoActual();
@@ -693,6 +765,18 @@ class Planes extends BaseController
 
         if ($plan === null) {
             return $this->planNoDisponibleRedirect();
+        }
+
+        $estadoPlan = PlanEstadoService::calcular(
+            $plan['estado'] ?? null,
+            $plan['fecha_inicio'] ?? null,
+            $plan['fecha_fin'] ?? null
+        );
+
+        if ($estadoPlan['estado'] === PlanEstadoService::ESTADO_FINALIZADO) {
+            session()->setFlashdata('error', 'No puedes eliminar un plan finalizado.');
+
+            return redirect()->to(route_to('medico_planes_show', $plan['id']));
         }
 
         $db = $this->planCuidadoModel->db;
@@ -937,6 +1021,16 @@ class Planes extends BaseController
     {
         $contexto = $this->obtenerActividadContexto($medicoId, $actividadId);
 
+        $estadoPlan = PlanEstadoService::calcular(
+            $contexto['plan_estado'] ?? null,
+            $contexto['plan_fecha_inicio'] ?? null,
+            $contexto['plan_fecha_fin'] ?? null
+        );
+
+        if ($estadoPlan['estado'] === PlanEstadoService::ESTADO_FINALIZADO) {
+            throw new InvalidArgumentException('No puedes validar actividades de un plan finalizado.');
+        }
+
         $estadoCompletada = $this->estadoActividadModel->findBySlug('completada');
         if ($estadoCompletada === null) {
             throw new InvalidArgumentException('No se encontró el estado completada.');
@@ -1024,6 +1118,16 @@ class Planes extends BaseController
         $contexto = $this->obtenerActividadContexto($medicoId, $actividadId);
         $planId   = (int) ($contexto['plan_id'] ?? 0);
 
+        $estadoPlan = PlanEstadoService::calcular(
+            $contexto['plan_estado'] ?? null,
+            $contexto['plan_fecha_inicio'] ?? null,
+            $contexto['plan_fecha_fin'] ?? null
+        );
+
+        if ($estadoPlan['estado'] === PlanEstadoService::ESTADO_FINALIZADO) {
+            throw new InvalidArgumentException('No puedes modificar actividades de un plan finalizado.');
+        }
+
         if (! $this->esValorVerdadero($contexto['validado'] ?? null)) {
             $datos = $this->obtenerActividadYResumen($planId, $actividadId);
 
@@ -1093,6 +1197,9 @@ class Planes extends BaseController
                 'a.validado',
                 'a.fecha_validacion',
                 'planes_cuidado.creador_user_id',
+                'planes_cuidado.estado AS plan_estado',
+                'planes_cuidado.fecha_inicio AS plan_fecha_inicio',
+                'planes_cuidado.fecha_fin AS plan_fecha_fin',
                 'estado_actividad.slug AS estado_slug',
                 'estado_actividad.nombre AS estado_nombre',
                 'categoria_actividad.nombre AS categoria_nombre',

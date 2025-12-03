@@ -5,7 +5,7 @@
 $planes             = $planes ?? [];
 $conteos            = $conteos ?? [];
 $filtrosDisponibles = $filtrosDisponibles ?? [];
-$filtroActual       = $filtroActual ?? 'activos';
+$filtroActual       = $filtroActual ?? 'en_curso';
 
 $formatearFecha = static function (?string $fecha): string {
     if (! $fecha) {
@@ -49,7 +49,7 @@ $planesFiltrados = count($planes);
 <?php if ($planesFiltrados === 0): ?>
     <div class="alert alert-info">
         <?php if ($totalAsignados === 0): ?>
-            No tenés planes de cuidado activos por el momento.
+            No tenés planes de cuidado asignados por el momento.
         <?php else: ?>
             No se encontraron planes para el filtro seleccionado.
         <?php endif; ?>
@@ -74,8 +74,8 @@ $planesFiltrados = count($planes);
             $medicoEspecialidad = trim((string) ($plan['medico_especialidad'] ?? ''));
 
             $badgeClass = match ($plan['estado_categoria'] ?? '') {
-                'finalizados' => 'badge-success',
-                'futuros'     => 'badge-secondary',
+                'finalizado'  => 'badge-success',
+                'sin_iniciar' => 'badge-secondary',
                 default       => 'badge-info',
             };
 
@@ -93,7 +93,7 @@ $planesFiltrados = count($planes);
                         <div class="d-flex align-items-start justify-content-between mb-2">
                             <h5 class="mb-0"><?= esc($nombre) ?></h5>
                             <span class="badge <?= esc($badgeClass) ?>">
-                                <?= esc($plan['estado_etiqueta'] ?? 'Activo') ?>
+                                <?= esc($plan['estado_etiqueta'] ?? 'En curso') ?>
                             </span>
                         </div>
                         <p class="text-muted mb-2">

@@ -6,19 +6,13 @@ namespace App\Services;
 
 use CodeIgniter\Database\ConnectionInterface;
 use Config\Database;
+use App\Services\PlanEstadoService;
 
 class PacienteDashboardService
 {
     private const ESTADO_PENDIENTE  = 'pendiente';
     private const ESTADO_COMPLETADA = 'completada';
     private const ESTADO_VENCIDA    = 'vencida';
-
-    private const ESTADOS_PLAN_FINALIZADOS = [
-        'finalizado',
-        'terminado',
-        'completado',
-        'cerrado',
-    ];
 
     private ConnectionInterface $db;
 
@@ -76,8 +70,8 @@ class PacienteDashboardService
 
         return [
             'diagnosticosActivos'    => $diagnosticos['activos'] ?? 0,
-            'planesActivos'          => (int) ($conteosPlanes['activos'] ?? 0),
-            'planesFinalizados'      => (int) ($conteosPlanes['finalizados'] ?? 0),
+            'planesActivos'          => (int) ($conteosPlanes['en_curso'] ?? 0),
+            'planesFinalizados'      => (int) ($conteosPlanes['finalizado'] ?? 0),
             'actividadesCompletadas' => $acumulados['completadas'],
             'actividadesPendientes'  => $acumulados['pendientes'],
             'actividadesVencidas'    => $acumulados['vencidas'],
@@ -103,7 +97,7 @@ class PacienteDashboardService
             $completadas += (int) ($plan['total_completadas'] ?? 0);
             $vencidas    += (int) ($plan['total_vencidas'] ?? 0);
 
-            if (($plan['estado_categoria'] ?? '') !== 'activos') {
+            if (($plan['estado_categoria'] ?? '') !== PlanEstadoService::ESTADO_EN_CURSO) {
                 continue;
             }
 
@@ -246,7 +240,7 @@ class PacienteDashboardService
             ->where('pc.fecha_fin >=', $this->hoy->format('Y-m-d'))
             ->groupStart()
                 ->where('pc.estado', null)
-                ->orWhereNotIn('pc.estado', self::ESTADOS_PLAN_FINALIZADOS)
+                ->orWhere('pc.estado !=', PlanEstadoService::ESTADO_FINALIZADO)
             ->groupEnd()
             ->get()
             ->getFirstRow('array');

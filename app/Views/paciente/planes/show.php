@@ -24,6 +24,9 @@ if ($planNombre === '') {
     $planNombre = 'Plan sin nombre';
 }
 
+$estadoPlanSlug = (string) ($plan['estado_categoria'] ?? $plan['estado'] ?? '');
+$planFinalizado = $estadoPlanSlug === 'finalizado';
+
 $diagnostico = trim((string) ($plan['diagnostico'] ?? ''));
 if ($diagnostico === '') {
     $diagnostico = 'Diagnóstico sin descripción';
@@ -34,9 +37,9 @@ $medicoDisponible = ! empty($plan['medico_disponible']);
 $medicoNombre = trim((string) ($plan['medico_nombre'] ?? ''));
 $medicoEspecialidad = trim((string) ($plan['medico_especialidad'] ?? ''));
 
-$badgeClass = match ($plan['estado_categoria'] ?? '') {
-    'finalizados' => 'badge-success',
-    'futuros'     => 'badge-secondary',
+$badgeClass = match ($estadoPlanSlug) {
+    'finalizado'  => 'badge-success',
+    'sin_iniciar' => 'badge-secondary',
     default       => 'badge-info',
 };
 
@@ -62,6 +65,12 @@ $fechasVigencia = sprintf(
 
 <?= view('layouts/partials/alerts') ?>
 
+<?php if ($planFinalizado): ?>
+    <div class="alert alert-secondary">
+        Este plan está finalizado. No podés marcar ni desmarcar actividades.
+    </div>
+<?php endif; ?>
+
 <div class="card card-outline card-primary mb-4">
     <div class="card-header">
         <h3 class="card-title mb-0">Información general</h3>
@@ -78,7 +87,7 @@ $fechasVigencia = sprintf(
             </div>
             <div class="col-md-3 mb-3">
                 <h6 class="text-muted text-uppercase mb-1">Estado actual</h6>
-                <p class="mb-0"><?= esc($plan['estado_etiqueta'] ?? 'Activo') ?></p>
+                <p class="mb-0"><?= esc($plan['estado_etiqueta'] ?? 'En curso') ?></p>
             </div>
             <div class="col-md-3 mb-3">
                 <h6 class="text-muted text-uppercase mb-1">Médico responsable</h6>
@@ -228,32 +237,36 @@ $fechasVigencia = sprintf(
                                 <?php endif; ?>
                             </td>
                             <td class="text-right" data-role="acciones">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <?php if (($actividad['estado_slug'] ?? '') === 'completada'): ?>
-                                        <button type="button"
-                                                class="btn btn-outline-primary"
-                                                data-action="editar"
-                                                data-actividad-id="<?= esc($actividadId) ?>"
-                                                data-comentario="<?= esc($comentario) ?>">
-                                            Editar comentario
-                                        </button>
-                                        <button type="button"
-                                                class="btn btn-outline-secondary"
-                                                data-action="desmarcar"
-                                                data-actividad-id="<?= esc($actividadId) ?>">
-                                            Desmarcar
-                                        </button>
-                                    <?php elseif (! empty($actividad['puede_marcar'])): ?>
-                                        <button type="button"
-                                                class="btn btn-success"
-                                                data-action="marcar"
-                                                data-actividad-id="<?= esc($actividadId) ?>">
-                                            Marcar como realizada
-                                        </button>
-                                    <?php else: ?>
-                                        <span class="text-muted small">Acción no disponible</span>
-                                    <?php endif; ?>
-                                </div>
+                                <?php if ($planFinalizado): ?>
+                                    <span class="text-muted small">Plan finalizado</span>
+                                <?php else: ?>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <?php if (($actividad['estado_slug'] ?? '') === 'completada'): ?>
+                                            <button type="button"
+                                                    class="btn btn-outline-primary"
+                                                    data-action="editar"
+                                                    data-actividad-id="<?= esc($actividadId) ?>"
+                                                    data-comentario="<?= esc($comentario) ?>">
+                                                Editar comentario
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary"
+                                                    data-action="desmarcar"
+                                                    data-actividad-id="<?= esc($actividadId) ?>">
+                                                Desmarcar
+                                            </button>
+                                        <?php elseif (! empty($actividad['puede_marcar'])): ?>
+                                            <button type="button"
+                                                    class="btn btn-success"
+                                                    data-action="marcar"
+                                                    data-actividad-id="<?= esc($actividadId) ?>">
+                                                Marcar como realizada
+                                            </button>
+                                        <?php else: ?>
+                                            <span class="text-muted small">Acción no disponible</span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -299,6 +312,7 @@ $fechasVigencia = sprintf(
         return;
     }
 
+    var planFinalizado = <?= $planFinalizado ? 'true' : 'false' ?>;
     var modalEl = document.getElementById('modal-comentario');
     var modalComentario = null;
     var comentarioTextarea = document.getElementById('comentario-actividad');
@@ -380,6 +394,10 @@ $fechasVigencia = sprintf(
     }
 
     function buildAccionesHtml(actividad) {
+        if (planFinalizado) {
+            return '<span class="text-muted small">Plan finalizado</span>';
+        }
+
         var id = actividad.id;
         var comentario = actividad.paciente_comentario ? escapeHtml(actividad.paciente_comentario) : '';
 

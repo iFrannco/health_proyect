@@ -83,6 +83,17 @@ if ($descripcionDiagnostico === '') {
     $descripcionDiagnostico = 'Diagnóstico sin descripción';
 }
 
+$planEstado      = $planEstado ?? [];
+$estadoSlugPlan  = (string) ($planEstado['estado'] ?? $plan['estado'] ?? '');
+$planFinalizado  = $estadoSlugPlan === 'finalizado';
+$puedeFinalizar  = ! $planFinalizado && ! empty($planEstado['sePuedeFinalizar']);
+$estadoEtiqueta  = $plan['estado_etiqueta'] ?? ($planEstado['etiqueta'] ?? 'En curso');
+$estadoBadge = match ($estadoSlugPlan) {
+    'finalizado'  => 'badge-success',
+    'sin_iniciar' => 'badge-secondary',
+    default       => 'badge-info',
+};
+
 $pacienteNombre = trim((string) (($plan['paciente_apellido'] ?? '') . ', ' . ($plan['paciente_nombre'] ?? '')));
 if ($pacienteNombre === '') {
     $pacienteNombre = 'Paciente sin datos';
@@ -118,21 +129,37 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                 <a href="<?= route_to('medico_planes_index') ?>" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left mr-1"></i> Volver al listado
                 </a>
-                <a href="<?= route_to('medico_planes_edit', $plan['id']) ?>" class="btn btn-primary">
-                    <i class="fas fa-edit mr-1"></i> Editar
-                </a>
-                <form action="<?= route_to('medico_planes_delete', $plan['id']) ?>" method="post" class="d-inline"
-                    id="form-eliminar-plan">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="_method" value="DELETE">
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash mr-1"></i> Eliminar
-                    </button>
-                </form>
+                <?php if (! $planFinalizado): ?>
+                    <a href="<?= route_to('medico_planes_edit', $plan['id']) ?>" class="btn btn-primary">
+                        <i class="fas fa-edit mr-1"></i> Editar
+                    </a>
+                    <form action="<?= route_to('medico_planes_finalizar', $plan['id']) ?>" method="post" class="d-inline">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-flag-checkered mr-1"></i> Finalizar plan
+                        </button>
+                    </form>
+                    <form action="<?= route_to('medico_planes_delete', $plan['id']) ?>" method="post" class="d-inline"
+                        id="form-eliminar-plan">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash mr-1"></i> Eliminar
+                        </button>
+                    </form>
+                <?php else: ?>
+                    <span class="badge badge-success">Plan finalizado</span>
+                <?php endif; ?>
             </div>
         </div>
 
         <?= view('layouts/partials/alerts') ?>
+
+        <?php if ($planFinalizado): ?>
+            <div class="alert alert-secondary">
+                Este plan está finalizado. No puedes editar ni validar sus actividades.
+            </div>
+        <?php endif; ?>
 
         <div class="card card-outline card-primary mb-4">
             <div class="card-header">
@@ -155,6 +182,15 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                     <div class="col-md-4 mb-3">
                         <h6 class="text-muted text-uppercase mb-1">Vigencia</h6>
                         <p class="mb-0"><?= esc($fechaInicio . ' → ' . $fechaFin) ?></p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <h6 class="text-muted text-uppercase mb-1">Estado del plan</h6>
+                        <p class="mb-0">
+                            <span class="badge <?= esc($estadoBadge) ?>"><?= esc($estadoEtiqueta) ?></span>
+                            <?php if ($puedeFinalizar): ?>
+                                <small class="text-warning d-block mt-1">La vigencia concluyó. Puedes finalizar el plan.</small>
+                            <?php endif; ?>
+                        </p>
                     </div>
                     <div class="col-md-8 mb-3">
                         <h6 class="text-muted text-uppercase mb-1">Descripción del plan</h6>
@@ -261,6 +297,10 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                                     $fechaValidacion    = $actividad['fecha_validacion'] ?? null;
                                     $puedeValidar       = $estadoSlug === 'completada' && ! $estaValidado;
                                     $puedeDesvalidar    = $estaValidado || $estadoSlug !== 'completada';
+                                    if ($planFinalizado) {
+                                        $puedeValidar    = false;
+                                        $puedeDesvalidar = false;
+                                    }
                                     $comentarioPaciente = trim((string) ($actividad['paciente_comentario'] ?? ''));
                                     $tieneComentario    = $comentarioPaciente !== '';
                                     $comentarioBtnClass = $tieneComentario ? 'btn-outline-info' : 'btn-outline-secondary';
@@ -320,7 +360,9 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                                                     <?= $tieneComentario ? '' : 'disabled' ?>>
                                                     <i class="far fa-comment-dots"></i>
                                                 </button>
-                                                <?php if ($puedeValidar): ?>
+                                                <?php if ($planFinalizado): ?>
+                                                    <span class="text-muted small">Plan finalizado</span>
+                                                <?php elseif ($puedeValidar): ?>
                                                     <button type="button"
                                                         class="btn btn-success btn-sm"
                                                         data-action="validar"

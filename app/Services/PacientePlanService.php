@@ -15,21 +15,14 @@ use RuntimeException;
 
 class PacientePlanService
 {
-    private const FILTRO_ACTIVOS     = 'activos';
-    private const FILTRO_FUTUROS     = 'futuros';
-    private const FILTRO_FINALIZADOS = 'finalizados';
+    private const FILTRO_SIN_INICIAR = 'sin_iniciar';
+    private const FILTRO_EN_CURSO    = 'en_curso';
+    private const FILTRO_FINALIZADOS = 'finalizado';
     private const FILTRO_TODOS       = 'todos';
 
     private const ESTADO_PENDIENTE  = 'pendiente';
     private const ESTADO_COMPLETADA = 'completada';
     private const ESTADO_VENCIDA    = 'vencida';
-
-    private const ESTADOS_PLAN_FINALIZADOS = [
-        'finalizado',
-        'terminado',
-        'completado',
-        'cerrado',
-    ];
 
     private ConnectionInterface $db;
 
@@ -60,8 +53,8 @@ class PacientePlanService
         $planesBase = $this->obtenerPlanesBase($pacienteId);
 
         $agrupados = [
-            self::FILTRO_ACTIVOS     => [],
-            self::FILTRO_FUTUROS     => [],
+            self::FILTRO_SIN_INICIAR => [],
+            self::FILTRO_EN_CURSO    => [],
             self::FILTRO_FINALIZADOS => [],
             self::FILTRO_TODOS       => [],
         ];
@@ -72,21 +65,21 @@ class PacientePlanService
             $agrupados[self::FILTRO_TODOS][] = $planFormateado;
 
             switch ($planFormateado['estado_categoria']) {
-                case self::FILTRO_ACTIVOS:
-                    $agrupados[self::FILTRO_ACTIVOS][] = $planFormateado;
+                case PlanEstadoService::ESTADO_SIN_INICIAR:
+                    $agrupados[self::FILTRO_SIN_INICIAR][] = $planFormateado;
                     break;
-                case self::FILTRO_FUTUROS:
-                    $agrupados[self::FILTRO_FUTUROS][] = $planFormateado;
-                    break;
-                case self::FILTRO_FINALIZADOS:
+                case PlanEstadoService::ESTADO_FINALIZADO:
                     $agrupados[self::FILTRO_FINALIZADOS][] = $planFormateado;
+                    break;
+                default:
+                    $agrupados[self::FILTRO_EN_CURSO][] = $planFormateado;
                     break;
             }
         }
 
         $conteos = [
-            self::FILTRO_ACTIVOS     => count($agrupados[self::FILTRO_ACTIVOS]),
-            self::FILTRO_FUTUROS     => count($agrupados[self::FILTRO_FUTUROS]),
+            self::FILTRO_SIN_INICIAR => count($agrupados[self::FILTRO_SIN_INICIAR]),
+            self::FILTRO_EN_CURSO    => count($agrupados[self::FILTRO_EN_CURSO]),
             self::FILTRO_FINALIZADOS => count($agrupados[self::FILTRO_FINALIZADOS]),
             self::FILTRO_TODOS       => count($agrupados[self::FILTRO_TODOS]),
         ];
@@ -140,6 +133,13 @@ class PacientePlanService
             throw PageForbiddenException::forPageForbidden('No se encontró el plan solicitado.');
         }
 
+        $estadoPlan = PlanEstadoService::calcular(
+            $plan['estado'] ?? null,
+            $plan['fecha_inicio'] ?? null,
+            $plan['fecha_fin'] ?? null,
+            $hoy
+        );
+
         $actividades = $this->db->table('actividades AS a')
             ->select([
                 'a.id',
@@ -169,14 +169,14 @@ class PacientePlanService
             ->getResultArray();
 
         $actividadesFormateadas = array_map(
-            fn (array $actividad): array => $this->formatearActividad($actividad, $hoy),
+            fn (array $actividad): array => $this->formatearActividad($actividad, $hoy, $estadoPlan['estado'] === PlanEstadoService::ESTADO_FINALIZADO),
             $actividades
         );
 
         $metricas = $this->calcularMetricasDesdeActividades($actividadesFormateadas);
 
         return [
-            'plan'        => $this->formatearPlanDetalle($plan, $hoy, $metricas),
+            'plan'        => $this->formatearPlanDetalle($plan, $hoy, $metricas, $estadoPlan),
             'metricas'    => $metricas,
             'actividades' => $actividadesFormateadas,
         ];
@@ -194,6 +194,17 @@ class PacientePlanService
         $hoy        = new DateTimeImmutable('today');
         $contexto   = $this->obtenerContextoActividad($pacienteId, $actividadId);
         $comentario = $this->normalizarComentario($comentario);
+
+        $estadoPlan = PlanEstadoService::calcular(
+            $contexto['plan_estado'] ?? null,
+            $contexto['plan_fecha_inicio'] ?? null,
+            $contexto['plan_fecha_fin'] ?? null,
+            $hoy
+        );
+
+        if ($estadoPlan['estado'] === PlanEstadoService::ESTADO_FINALIZADO) {
+            throw new InvalidArgumentException('No se pueden modificar actividades de un plan finalizado.');
+        }
 
         $this->validarPuedeMarcar($contexto, $hoy);
 
@@ -229,6 +240,17 @@ class PacientePlanService
     {
         $hoy      = new DateTimeImmutable('today');
         $contexto = $this->obtenerContextoActividad($pacienteId, $actividadId);
+
+        $estadoPlan = PlanEstadoService::calcular(
+            $contexto['plan_estado'] ?? null,
+            $contexto['plan_fecha_inicio'] ?? null,
+            $contexto['plan_fecha_fin'] ?? null,
+            $hoy
+        );
+
+        if ($estadoPlan['estado'] === PlanEstadoService::ESTADO_FINALIZADO) {
+            throw new InvalidArgumentException('No se pueden modificar actividades de un plan finalizado.');
+        }
 
         if (($contexto['estado_slug'] ?? null) !== self::ESTADO_COMPLETADA) {
             throw new InvalidArgumentException('Solo se pueden desmarcar actividades completadas.');
@@ -300,10 +322,12 @@ class PacientePlanService
      */
     private function formatearPlanResumen(array $plan, DateTimeImmutable $hoy): array
     {
-        $fechaInicio = $this->crearFecha($plan['fecha_inicio'] ?? null);
-        $fechaFin    = $this->crearFecha($plan['fecha_fin'] ?? null);
-
-        $estadoCategoria = $this->calcularCategoriaPlan($plan, $hoy, $fechaInicio, $fechaFin);
+        $estadoPlan = PlanEstadoService::calcular(
+            $plan['estado'] ?? null,
+            $plan['fecha_inicio'] ?? null,
+            $plan['fecha_fin'] ?? null,
+            $hoy
+        );
 
         $totalActividades = (int) ($plan['total_actividades'] ?? 0);
         $totalCompletadas = (int) ($plan['total_completadas'] ?? 0);
@@ -329,10 +353,10 @@ class PacientePlanService
             'fecha_inicio'        => $plan['fecha_inicio'] ?? null,
             'fecha_fin'           => $plan['fecha_fin'] ?? null,
             'fecha_creacion'      => $plan['fecha_creacion'] ?? null,
-            'estado'              => $plan['estado'] ?? null,
+            'estado'              => $estadoPlan['estado'],
             'diagnostico'         => $plan['diagnostico_descripcion'] ?? null,
-            'estado_categoria'    => $estadoCategoria,
-            'estado_etiqueta'     => $this->etiquetaParaCategoria($estadoCategoria),
+            'estado_categoria'    => $estadoPlan['estado'],
+            'estado_etiqueta'     => $estadoPlan['etiqueta'],
             'total_actividades'   => $totalActividades,
             'total_completadas'   => $totalCompletadas,
             'total_pendientes'    => $totalPendientes,
@@ -340,8 +364,8 @@ class PacientePlanService
             'total_validadas'     => $totalValidadas,
             'total_pendientes_validacion' => max($totalCompletadas - $totalValidadas, 0),
             'porcentaje_completadas' => $porcentaje,
-            'es_vigente'          => $estadoCategoria === self::FILTRO_ACTIVOS,
-            'es_futuro'           => $estadoCategoria === self::FILTRO_FUTUROS,
+            'es_vigente'          => $estadoPlan['estado'] === PlanEstadoService::ESTADO_EN_CURSO,
+            'es_futuro'           => $estadoPlan['estado'] === PlanEstadoService::ESTADO_SIN_INICIAR,
             'medico_id'           => $medico['id'],
             'medico_nombre'       => $medico['nombre_completo'],
             'medico_especialidad' => $medico['especialidad'],
@@ -355,12 +379,15 @@ class PacientePlanService
      *
      * @return array<string, mixed>
      */
-    private function formatearPlanDetalle(array $plan, DateTimeImmutable $hoy, array $metricas): array
+    private function formatearPlanDetalle(array $plan, DateTimeImmutable $hoy, array $metricas, ?array $estadoPlan = null): array
     {
-        $fechaInicio = $this->crearFecha($plan['fecha_inicio'] ?? null);
-        $fechaFin    = $this->crearFecha($plan['fecha_fin'] ?? null);
-
-        $estadoCategoria = $this->calcularCategoriaPlan($plan, $hoy, $fechaInicio, $fechaFin);
+        $estadoPlan = $estadoPlan
+            ?? PlanEstadoService::calcular(
+                $plan['estado'] ?? null,
+                $plan['fecha_inicio'] ?? null,
+                $plan['fecha_fin'] ?? null,
+                $hoy
+            );
 
         $medico = $this->formatearMedico(
             $plan['medico_id'] ?? null,
@@ -376,11 +403,12 @@ class PacientePlanService
             'fecha_creacion'  => $plan['fecha_creacion'] ?? null,
             'fecha_inicio'    => $plan['fecha_inicio'] ?? null,
             'fecha_fin'       => $plan['fecha_fin'] ?? null,
-            'estado'          => $plan['estado'] ?? null,
+            'estado'          => $estadoPlan['estado'],
             'diagnostico_id'  => (int) ($plan['diagnostico_id'] ?? 0),
             'diagnostico'     => $plan['diagnostico_descripcion'] ?? null,
-            'estado_categoria' => $estadoCategoria,
-            'estado_etiqueta'   => $this->etiquetaParaCategoria($estadoCategoria),
+            'estado_categoria' => $estadoPlan['estado'],
+            'estado_etiqueta'   => $estadoPlan['etiqueta'],
+            'se_puede_finalizar' => $estadoPlan['sePuedeFinalizar'],
             'metricas'          => $metricas,
             'medico_id'         => $medico['id'],
             'medico_nombre'     => $medico['nombre_completo'],
@@ -394,7 +422,7 @@ class PacientePlanService
      *
      * @return array<string, mixed>
      */
-    private function formatearActividad(array $actividad, DateTimeImmutable $hoy): array
+    private function formatearActividad(array $actividad, DateTimeImmutable $hoy, bool $planFinalizado = false): array
     {
         $fechaInicio = $this->crearFecha($actividad['fecha_inicio'] ?? null);
         $fechaFin    = $this->crearFecha($actividad['fecha_fin'] ?? null);
@@ -404,10 +432,12 @@ class PacientePlanService
         $esVencida   = $estadoSlug === self::ESTADO_VENCIDA;
 
         $dentroDeRango = $this->estaDentroDeRango($fechaInicio, $fechaFin, $hoy);
-        $puedeMarcar   = $esPendiente && $dentroDeRango;
+        $puedeMarcar   = $esPendiente && $dentroDeRango && ! $planFinalizado;
 
         $bloqueoMotivo = null;
-        if ($esPendiente && ! $dentroDeRango) {
+        if ($planFinalizado) {
+            $bloqueoMotivo = 'Este plan está finalizado. No puedes modificar sus actividades.';
+        } elseif ($esPendiente && ! $dentroDeRango) {
             if ($fechaInicio !== null && $hoy < $fechaInicio) {
                 $bloqueoMotivo = sprintf('Disponible a partir del %s.', $fechaInicio->format('d/m/Y'));
             } elseif ($fechaFin !== null && $hoy > $fechaFin) {
@@ -539,6 +569,9 @@ class PacientePlanService
                 'a.estado_id',
                 'estado_actividad.slug AS estado_slug',
                 'diagnosticos.destinatario_user_id',
+                'pc.estado AS plan_estado',
+                'pc.fecha_inicio AS plan_fecha_inicio',
+                'pc.fecha_fin AS plan_fecha_fin',
             ])
             ->join('planes_cuidado AS pc', 'pc.id = a.plan_id', 'inner')
             ->join('diagnosticos', 'diagnosticos.id = pc.diagnostico_id', 'inner')
@@ -596,44 +629,14 @@ class PacientePlanService
         $valor = strtolower(trim($filtro));
 
         return match ($valor) {
-            self::FILTRO_FUTUROS, self::FILTRO_FINALIZADOS, self::FILTRO_TODOS => $valor,
-            default => self::FILTRO_ACTIVOS,
-        };
-    }
-
-    /**
-     * @param array<string, mixed>      $plan
-     * @param DateTimeImmutable|null    $fechaInicio
-     * @param DateTimeImmutable|null    $fechaFin
-     */
-    private function calcularCategoriaPlan(
-        array $plan,
-        DateTimeImmutable $hoy,
-        ?DateTimeImmutable $fechaInicio,
-        ?DateTimeImmutable $fechaFin
-    ): string {
-        $estadoTexto = strtolower(trim((string) ($plan['estado'] ?? '')));
-        if ($estadoTexto !== '' && in_array($estadoTexto, self::ESTADOS_PLAN_FINALIZADOS, true)) {
-            return self::FILTRO_FINALIZADOS;
-        }
-
-        if ($fechaInicio !== null && $hoy < $fechaInicio) {
-            return self::FILTRO_FUTUROS;
-        }
-
-        if ($fechaFin !== null && $hoy > $fechaFin) {
-            return self::FILTRO_FINALIZADOS;
-        }
-
-        return self::FILTRO_ACTIVOS;
-    }
-
-    private function etiquetaParaCategoria(string $categoria): string
-    {
-        return match ($categoria) {
-            self::FILTRO_FUTUROS => 'Futuro',
-            self::FILTRO_FINALIZADOS => 'Finalizado',
-            default => 'Activo',
+            'activos'       => self::FILTRO_EN_CURSO,
+            'futuros'       => self::FILTRO_SIN_INICIAR,
+            'finalizados'   => self::FILTRO_FINALIZADOS,
+            self::FILTRO_SIN_INICIAR,
+            self::FILTRO_FINALIZADOS,
+            self::FILTRO_TODOS,
+            self::FILTRO_EN_CURSO => $valor,
+            default => self::FILTRO_EN_CURSO,
         };
     }
 
@@ -748,8 +751,10 @@ class PacientePlanService
                 'a.fecha_validacion',
                 'estado_actividad.slug AS estado_slug',
                 'estado_actividad.nombre AS estado_nombre',
+                'pc.estado AS plan_estado',
             ])
             ->join('estado_actividad', 'estado_actividad.id = a.estado_id', 'left')
+            ->join('planes_cuidado AS pc', 'pc.id = a.plan_id', 'inner')
             ->where('a.id', $actividadId)
             ->where('a.deleted_at', null)
             ->get()
@@ -759,7 +764,9 @@ class PacientePlanService
             throw new DatabaseException('No se pudo recuperar la actividad actualizada.');
         }
 
-        return $this->formatearActividad($actividad, $hoy);
+        $planFinalizado = PlanEstadoService::normalizar($actividad['plan_estado'] ?? null) === PlanEstadoService::ESTADO_FINALIZADO;
+
+        return $this->formatearActividad($actividad, $hoy, $planFinalizado);
     }
 
     /**

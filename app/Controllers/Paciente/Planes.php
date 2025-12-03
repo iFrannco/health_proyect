@@ -14,9 +14,9 @@ use InvalidArgumentException;
 class Planes extends BaseController
 {
     private const FILTROS = [
-        'activos'     => 'Activos',
-        'futuros'     => 'Futuros',
-        'finalizados' => 'Finalizados',
+        'en_curso'    => 'En curso',
+        'sin_iniciar' => 'Sin iniciar',
+        'finalizado'  => 'Finalizados',
         'todos'       => 'Todos',
     ];
 

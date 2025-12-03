@@ -6,14 +6,12 @@ namespace App\Services;
 
 use CodeIgniter\Database\ConnectionInterface;
 use Config\Database;
+use App\Services\PlanEstadoService;
 
 class MedicoDashboardService
 {
     private const ESTADOS_PLAN_FINALIZADOS = [
-        'finalizado',
-        'terminado',
-        'completado',
-        'cerrado',
+        PlanEstadoService::ESTADO_FINALIZADO,
     ];
 
     private const MESES_CORTOS = [
@@ -146,13 +144,12 @@ class MedicoDashboardService
         $valuesEstado = [];
         foreach ($planesPorEstado as $row) {
             $estadoCrudo = trim(strtolower((string) ($row['estado'] ?? '')));
-            if ($estadoCrudo === '') {
-                $estadoLabel = 'Sin estado';
-            } elseif (in_array($estadoCrudo, self::ESTADOS_PLAN_FINALIZADOS, true)) {
-                $estadoLabel = 'Finalizado';
-            } else {
-                $estadoLabel = ucfirst($estadoCrudo);
-            }
+            $estadoLabel = match ($estadoCrudo) {
+                PlanEstadoService::ESTADO_FINALIZADO  => 'Finalizado',
+                PlanEstadoService::ESTADO_SIN_INICIAR => 'Sin iniciar',
+                PlanEstadoService::ESTADO_EN_CURSO    => 'En curso',
+                default                               => ($estadoCrudo === '' ? 'Sin estado' : ucfirst(str_replace('_', ' ', $estadoCrudo))),
+            };
 
             $labelsEstado[] = $estadoLabel;
             $valuesEstado[] = (int) ($row['total'] ?? 0);
@@ -356,28 +353,14 @@ class MedicoDashboardService
 
     private function planEstaActivo(?string $estado, ?string $fechaFin): bool
     {
-        return ! $this->planEstaFinalizado($estado, $fechaFin);
+        return $this->planEstaFinalizado($estado, $fechaFin) === false;
     }
 
     private function planEstaFinalizado(?string $estado, ?string $fechaFin): bool
     {
-        $estadoNormalizado = trim(strtolower((string) $estado));
+        $estadoNormalizado = PlanEstadoService::normalizar($estado);
 
-        if ($estadoNormalizado !== '' && in_array($estadoNormalizado, self::ESTADOS_PLAN_FINALIZADOS, true)) {
-            return true;
-        }
-
-        if ($fechaFin === null || $fechaFin === '') {
-            return false;
-        }
-
-        try {
-            $fin = new \DateTimeImmutable($fechaFin);
-        } catch (\Throwable $exception) {
-            return false;
-        }
-
-        return $fin < $this->hoy;
+        return $estadoNormalizado === PlanEstadoService::ESTADO_FINALIZADO;
     }
 
     private function esValorVerdadero($valor): bool

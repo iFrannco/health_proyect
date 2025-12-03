@@ -9,6 +9,7 @@ use CodeIgniter\Database\ConnectionInterface;
 use Config\Database;
 use DateInterval;
 use DateTimeImmutable;
+use App\Services\PlanEstadoService;
 
 class AdminDashboardService
 {
@@ -19,19 +20,12 @@ class AdminDashboardService
     ];
 
     private const PLAN_LABELS = [
-        'activos'     => 'Activos',
-        'futuros'     => 'Futuros',
-        'finalizados' => 'Finalizados',
+        'en_curso'    => 'En curso',
+        'sin_iniciar' => 'Sin iniciar',
+        'finalizado'  => 'Finalizados',
     ];
 
     private const ESTADO_ACTIVIDAD_COMPLETADA = 'completada';
-
-    private const ESTADOS_PLAN_FINALIZADOS = [
-        'finalizado',
-        'terminado',
-        'completado',
-        'cerrado',
-    ];
 
     private ConnectionInterface $db;
 
@@ -172,9 +166,9 @@ class AdminDashboardService
             ->getResultArray();
 
         $conteos = [
-            'activos'     => 0,
-            'futuros'     => 0,
-            'finalizados' => 0,
+            'en_curso'    => 0,
+            'sin_iniciar' => 0,
+            'finalizado'  => 0,
         ];
 
         $pacientesConPlanActivo = [];
@@ -186,7 +180,7 @@ class AdminDashboardService
             $categoria = $this->clasificarPlan($plan);
             $conteos[$categoria]++;
 
-            if ($categoria === 'activos') {
+            if ($categoria === 'en_curso') {
                 $planesActivos++;
                 $pacienteId = (int) ($plan['paciente_id'] ?? 0);
                 if ($pacienteId > 0) {
@@ -228,23 +222,18 @@ class AdminDashboardService
      */
     private function clasificarPlan(array $plan): string
     {
-        $estadoTexto = strtolower(trim((string) ($plan['estado'] ?? '')));
-        if ($estadoTexto !== '' && in_array($estadoTexto, self::ESTADOS_PLAN_FINALIZADOS, true)) {
-            return 'finalizados';
-        }
+        $estadoPlan = PlanEstadoService::calcular(
+            $plan['estado'] ?? null,
+            $plan['fecha_inicio'] ?? null,
+            $plan['fecha_fin'] ?? null,
+            $this->hoy
+        );
 
-        $fechaInicio = $this->crearFecha($plan['fecha_inicio'] ?? null);
-        $fechaFin    = $this->crearFecha($plan['fecha_fin'] ?? null);
-
-        if ($fechaInicio !== null && $this->hoy < $fechaInicio) {
-            return 'futuros';
-        }
-
-        if ($fechaFin !== null && $this->hoy > $fechaFin) {
-            return 'finalizados';
-        }
-
-        return 'activos';
+        return match ($estadoPlan['estado']) {
+            PlanEstadoService::ESTADO_FINALIZADO  => 'finalizado',
+            PlanEstadoService::ESTADO_SIN_INICIAR => 'sin_iniciar',
+            default                               => 'en_curso',
+        };
     }
 
     private function contarDiagnosticosUltimos30Dias(): int
@@ -423,4 +412,3 @@ class AdminDashboardService
         }
     }
 }
-

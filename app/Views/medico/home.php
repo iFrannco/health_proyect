@@ -148,7 +148,7 @@ $diagnosticosActivos = $kpis['diagnosticosActivos'] ?? 0;
             <div class="inner">
                 <h3><?= esc($formatEntero($planesFinalizadosTotal)) ?></h3>
                 <p>Planes finalizados</p>
-                <p class="metric-note"><?= esc($formatDecimal($planesFinalizadosPorc)) ?>% con estado cerrado o fecha concluida</p>
+                <p class="metric-note"><?= esc($formatDecimal($planesFinalizadosPorc)) ?>% marcados como finalizados</p>
             </div>
             <div class="icon"><i class="fas fa-flag-checkered"></i></div>
         </div>
