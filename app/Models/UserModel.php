@@ -89,6 +89,49 @@ class UserModel extends Model
         return $builder
             ->groupStart()
                 ->like('users.nombre', $terminoNormalizado, 'both', null, true)
+            ->orLike('users.apellido', $terminoNormalizado, 'both', null, true)
+            ->groupEnd()
+            ->findAll();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function buscarPacientesConDiagnosticoDeMedico(
+        int $medicoId,
+        string $termino,
+        ?string $dniSoloDigitos = null,
+        int $limit = 10
+    ): array {
+        $builder = $this->select([
+                'users.id',
+                'users.nombre',
+                'users.apellido',
+                'users.dni',
+            ])
+            ->join('roles', 'roles.id = users.role_id', 'inner')
+            ->join('diagnosticos', 'diagnosticos.destinatario_user_id = users.id', 'inner')
+            ->where('users.activo', 1)
+            ->where('roles.slug', self::ROLE_PACIENTE)
+            ->where('diagnosticos.autor_user_id', $medicoId)
+            ->where('diagnosticos.deleted_at', null)
+            ->distinct()
+            ->orderBy('users.apellido', 'ASC')
+            ->orderBy('users.nombre', 'ASC')
+            ->limit($limit)
+            ->asArray();
+
+        if ($dniSoloDigitos !== null && $dniSoloDigitos !== '') {
+            return $builder
+                ->like('users.dni', $dniSoloDigitos, 'both', null, true)
+                ->findAll();
+        }
+
+        $terminoNormalizado = trim($termino);
+
+        return $builder
+            ->groupStart()
+                ->like('users.nombre', $terminoNormalizado, 'both', null, true)
                 ->orLike('users.apellido', $terminoNormalizado, 'both', null, true)
             ->groupEnd()
             ->findAll();

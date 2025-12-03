@@ -155,6 +155,7 @@
         const pacienteSeleccionadoDni = document.getElementById('paciente-seleccionado-dni');
         const btnLimpiarPaciente = document.getElementById('btn-limpiar-paciente');
         const endpointPacientes = '<?= route_to('medico_planes_buscar_pacientes') ?>';
+        const scopeBusqueda = 'diagnosticos';
 
         function limpiarResultados() {
             if (resultadosPacientes) {
@@ -270,7 +271,8 @@
             }
 
             try {
-                const response = await fetch(endpointPacientes + '?q=' + encodeURIComponent(termino), {
+                const url = endpointPacientes + '?q=' + encodeURIComponent(termino) + '&scope=' + encodeURIComponent(scopeBusqueda);
+                const response = await fetch(url, {
                     headers: {
                         'Accept': 'application/json',
                     },

@@ -74,9 +74,10 @@ class Planes extends BaseController
 
     public function buscarPacientes(): ResponseInterface
     {
-        $this->obtenerMedicoActual();
+        $medico = $this->obtenerMedicoActual();
 
         $termino = trim((string) ($this->request->getGet('q') ?? ''));
+        $scope   = (string) ($this->request->getGet('scope') ?? '');
 
         if ($termino === '' || mb_strlen($termino) < 2) {
             return $this->response
@@ -98,11 +99,18 @@ class Planes extends BaseController
         }
 
         try {
-            $pacientes = $this->userModel->buscarPacientesPorNombreODni(
-                $termino,
-                $dniSoloDigitos !== '' ? $dniSoloDigitos : null,
-                10
-            );
+            $pacientes = $scope === 'diagnosticos'
+                ? $this->userModel->buscarPacientesPorNombreODni(
+                    $termino,
+                    $dniSoloDigitos !== '' ? $dniSoloDigitos : null,
+                    10
+                )
+                : $this->userModel->buscarPacientesConDiagnosticoDeMedico(
+                    $medico->id,
+                    $termino,
+                    $dniSoloDigitos !== '' ? $dniSoloDigitos : null,
+                    10
+                );
         } catch (\Throwable $exception) {
             log_message('error', 'Error al buscar pacientes: {exception}', ['exception' => $exception]);
 
