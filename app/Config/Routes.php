@@ -40,6 +40,8 @@ $routes->group('admin', ['filter' => 'auth'], function ($routes) {
 $routes->group('paciente', ['filter' => 'auth'], function ($routes) {
     $routes->get('home', 'Paciente\Home::index');
     $routes->get('home/resumen', 'Paciente\Home::resumen', ['as' => 'paciente_dashboard_resumen']);
+    $routes->get('diagnosticos', 'Paciente\Diagnosticos::index', ['as' => 'paciente_diagnosticos_index']);
+    $routes->get('diagnosticos/(:num)', 'Paciente\Diagnosticos::show/$1', ['as' => 'paciente_diagnosticos_show']);
     $routes->get('planes', 'Paciente\Planes::index', ['as' => 'paciente_planes_index']);
     $routes->get('planes/(:num)', 'Paciente\Planes::show/$1', ['as' => 'paciente_planes_show']);
     $routes->post('planes/actividades/(:num)/marcar', 'Paciente\Planes::marcarActividad/$1', ['as' => 'paciente_planes_actividad_marcar']);
