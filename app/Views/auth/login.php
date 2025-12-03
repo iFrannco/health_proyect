@@ -43,6 +43,11 @@
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
+            <?php if (session()->getFlashdata('status')): ?>
+                <div class="alert alert-success" role="alert">
+                    <?= esc(session()->getFlashdata('status')) ?>
+                </div>
+            <?php endif; ?>
 
             <form action="<?= site_url('auth/login') ?>" method="post" novalidate autocomplete="on">
                 <?= csrf_field() ?>
@@ -63,6 +68,9 @@
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
+                </div>
+                <div class="d-flex justify-content-end mb-3">
+                    <a href="<?= route_to('auth_password_request') ?>" class="small">¿Olvidó su contraseña?</a>
                 </div>
                 <div class="row">
                     <div class="col-12">

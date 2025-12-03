@@ -13,6 +13,10 @@ $routes->group('auth', function ($routes) {
     $routes->post('login', 'Auth\Login::autenticar', ['as' => 'auth_login_post']);
     $routes->get('register', 'Auth\Register::index', ['as' => 'auth_register']);
     $routes->post('register', 'Auth\Register::store', ['as' => 'auth_register_post']);
+    $routes->get('forgot-password', 'Auth\PasswordReset::request', ['as' => 'auth_password_request']);
+    $routes->post('forgot-password', 'Auth\PasswordReset::send', ['as' => 'auth_password_send']);
+    $routes->get('reset-password', 'Auth\PasswordReset::showResetForm', ['as' => 'auth_password_form']);
+    $routes->post('reset-password', 'Auth\PasswordReset::processReset', ['as' => 'auth_password_process']);
     $routes->get('logout', 'Auth\Logout::index', ['as' => 'auth_logout']);
 });
 
