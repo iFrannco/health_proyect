@@ -38,7 +38,7 @@ function buildLayoutData(string $rol): array
             $navItems = [
                 ['label' => 'Home', 'url' => site_url('paciente/home'), 'icon' => 'fas fa-home'],
                 ['label' => 'Diagnósticos', 'url' => site_url('paciente/diagnosticos'), 'icon' => 'fas fa-stethoscope'],
-                ['label' => 'Historial Médico', 'url' => '#', 'icon' => 'fas fa-file-medical'],
+                ['label' => 'Historial Médico', 'url' => site_url('paciente/documentacion'), 'icon' => 'fas fa-file-medical'],
                 ['label' => 'Planes de cuidado', 'url' => site_url('paciente/planes'), 'icon' => 'fas fa-heartbeat'],
             ];
             $perfilUrl = site_url('paciente/perfil');

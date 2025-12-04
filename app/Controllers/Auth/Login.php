@@ -36,11 +36,16 @@ class Login extends BaseController
 
         $userModel = new UserModel();
 
-        $usuario = $userModel
-            ->select('users.*, roles.slug AS rol_slug')
-            ->join('roles', 'roles.id = users.role_id', 'inner')
-            ->where('users.email', $email)
-            ->first();
+        try {
+            $usuario = $userModel
+                ->select('users.*, roles.slug AS rol_slug')
+                ->join('roles', 'roles.id = users.role_id', 'inner')
+                ->where('users.email', $email)
+                ->first();
+        } catch (\Throwable $exception) {
+            log_message('critical', 'Error de base de datos al autenticar: {exception}', ['exception' => $exception]);
+            return redirect()->back()->withInput()->with('login_error', 'Servicio temporalmente no disponible. Verifica la conexión a la base de datos.');
+        }
 
         if ($usuario === null) {
             return $this->falloAutenticacion('Credenciales inválidas.');
