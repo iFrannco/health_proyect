@@ -22,6 +22,8 @@ $routes->group('auth', function ($routes) {
 
 $routes->group('admin', ['filter' => 'auth'], function ($routes) {
     $routes->get('home', 'Admin\Home::index');
+    
+    // Usuarios
     $routes->get('usuarios', 'Admin\Usuarios::index', ['as' => 'admin_usuarios_index']);
     $routes->get('usuarios/nuevo', 'Admin\Usuarios::create', ['as' => 'admin_usuarios_create']);
     $routes->post('usuarios', 'Admin\Usuarios::store', ['as' => 'admin_usuarios_store']);
@@ -31,11 +33,21 @@ $routes->group('admin', ['filter' => 'auth'], function ($routes) {
     $routes->post('usuarios/(:num)/reset-password', 'Admin\Usuarios::resetPassword/$1', ['as' => 'admin_usuarios_reset_password']);
     $routes->post('usuarios/(:num)/estado', 'Admin\Usuarios::cambiarEstado/$1', ['as' => 'admin_usuarios_toggle_estado']);
 
+    // Tipos de Diagnostico
     $routes->get('tipos-diagnostico', 'Admin\TiposDiagnostico::index', ['as' => 'admin_tipos_diagnostico_index']);
     $routes->post('tipos-diagnostico', 'Admin\TiposDiagnostico::store', ['as' => 'admin_tipos_diagnostico_store']);
     $routes->post('tipos-diagnostico/(:num)/actualizar', 'Admin\TiposDiagnostico::update/$1', ['as' => 'admin_tipos_diagnostico_update']);
     $routes->post('tipos-diagnostico/(:num)/estado', 'Admin\TiposDiagnostico::toggle/$1', ['as' => 'admin_tipos_diagnostico_toggle']);
 
+    // Planes Estandarizados
+    $routes->get('planes-estandar', 'Admin\PlanesEstandar::index', ['as' => 'admin_planes_estandar_index']);
+    $routes->get('planes-estandar/nuevo', 'Admin\PlanesEstandar::create', ['as' => 'admin_planes_estandar_create']);
+    $routes->post('planes-estandar', 'Admin\PlanesEstandar::store', ['as' => 'admin_planes_estandar_store']);
+    $routes->get('planes-estandar/(:num)/editar', 'Admin\PlanesEstandar::edit/$1', ['as' => 'admin_planes_estandar_edit']);
+    $routes->post('planes-estandar/(:num)/actualizar', 'Admin\PlanesEstandar::update/$1', ['as' => 'admin_planes_estandar_update']);
+    $routes->post('planes-estandar/(:num)/toggle-vigencia', 'Admin\PlanesEstandar::toggleVigencia/$1', ['as' => 'admin_planes_estandar_toggle']);
+
+    // Perfil Admin
     $routes->get('perfil', 'Admin\Perfil::index', ['as' => 'admin_perfil_index']);
     $routes->post('perfil/datos', 'Admin\Perfil::actualizarDatos', ['as' => 'admin_perfil_actualizar_datos']);
     $routes->post('perfil/password', 'Admin\Perfil::actualizarPassword', ['as' => 'admin_perfil_actualizar_password']);
