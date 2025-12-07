@@ -80,17 +80,41 @@ class PlanesEstandar extends BaseController
 
             // 2. Insert Activities
             foreach ($actividadesData as $index => $actividad) {
-                if ($actividad['offset_fin_dias'] < $actividad['offset_inicio_dias']) {
-                    throw new \Exception("La actividad '{$actividad['nombre']}' tiene un día de fin menor al día de inicio.");
+                // Cálculo de offset_fin_dias basado en duración si viene del formulario
+                $offsetInicio = (int)$actividad['offset_inicio_dias'];
+                $duracionCantidad = (int)($actividad['duracion_cantidad'] ?? 1);
+                $duracionTipo = $actividad['duracion_tipo'] ?? 'dias';
+                
+                // Convertir duración a días para calcular el offset final
+                $diasDuracion = $duracionCantidad;
+                if ($duracionTipo === 'semanas') {
+                    $diasDuracion = $duracionCantidad * 7;
+                } elseif ($duracionTipo === 'meses') {
+                    $diasDuracion = $duracionCantidad * 30; // Aproximación estándar
                 }
 
+                // El offset fin es inicio + duración
+                // Ejemplo: Inicio día 0, duración 1 día -> Fin día 1 (o día 0 si es inclusivo, pero mantenemos lógica de plazo)
+                // Si la lógica es "durante 1 día", y empieza hoy (0), termina hoy (0) o mañana (1)?
+                // Usualmente offset_fin_dias es el último día activo. 
+                // Si empieza el día 0 y dura 1 día -> día 0. (0 + 1 - 1)
+                $offsetFin = $offsetInicio + $diasDuracion - 1;
+                if ($offsetFin < $offsetInicio) {
+                    $offsetFin = $offsetInicio; // Duración mínima de 1 día efectivo
+                }
+
+                // Sobrescribir o usar el calculado si no viene explícito (aunque el form nuevo no envía offset_fin_dias directo)
                 $actividadToInsert = [
-                    'plan_estandar_id'   => $planId,
-                    'nombre'             => $actividad['nombre'],
-                    'descripcion'        => $actividad['descripcion'] ?? '',
-                    'offset_inicio_dias' => $actividad['offset_inicio_dias'],
-                    'offset_fin_dias'    => $actividad['offset_fin_dias'],
-                    'orden'              => $index + 1,
+                    'plan_estandar_id'    => $planId,
+                    'nombre'              => $actividad['nombre'],
+                    'descripcion'         => $actividad['descripcion'] ?? '',
+                    'offset_inicio_dias'  => $offsetInicio,
+                    'offset_fin_dias'     => $offsetFin,
+                    'orden'               => $index + 1,
+                    'repeticion_cantidad' => $actividad['repeticion_cantidad'] ?? 1,
+                    'repeticion_tipo'     => $actividad['repeticion_tipo'] ?? 'dia',
+                    'duracion_cantidad'   => $duracionCantidad,
+                    'duracion_tipo'       => $duracionTipo,
                 ];
 
                 if (! $this->planEstandarActividadModel->insert($actividadToInsert)) {
@@ -197,17 +221,32 @@ class PlanesEstandar extends BaseController
             $db->table('plan_estandar_actividades')->where('plan_estandar_id', $id)->delete(); 
 
             foreach ($actividadesData as $index => $actividad) {
-                 if ($actividad['offset_fin_dias'] < $actividad['offset_inicio_dias']) {
-                    throw new \Exception("La actividad '{$actividad['nombre']}' tiene un día de fin menor al día de inicio.");
+                // Cálculo de offset_fin_dias (Lógica replicada de store)
+                $offsetInicio = (int)$actividad['offset_inicio_dias'];
+                $duracionCantidad = (int)($actividad['duracion_cantidad'] ?? 1);
+                $duracionTipo = $actividad['duracion_tipo'] ?? 'dias';
+                
+                $diasDuracion = $duracionCantidad;
+                if ($duracionTipo === 'semanas') {
+                    $diasDuracion = $duracionCantidad * 7;
+                } elseif ($duracionTipo === 'meses') {
+                    $diasDuracion = $duracionCantidad * 30;
                 }
 
+                $offsetFin = $offsetInicio + $diasDuracion - 1;
+                if ($offsetFin < $offsetInicio) $offsetFin = $offsetInicio;
+
                 $actividadToInsert = [
-                    'plan_estandar_id'   => $id,
-                    'nombre'             => $actividad['nombre'],
-                    'descripcion'        => $actividad['descripcion'] ?? '',
-                    'offset_inicio_dias' => $actividad['offset_inicio_dias'],
-                    'offset_fin_dias'    => $actividad['offset_fin_dias'],
-                    'orden'              => $index + 1,
+                    'plan_estandar_id'    => $id,
+                    'nombre'              => $actividad['nombre'],
+                    'descripcion'         => $actividad['descripcion'] ?? '',
+                    'offset_inicio_dias'  => $offsetInicio,
+                    'offset_fin_dias'     => $offsetFin,
+                    'orden'               => $index + 1,
+                    'repeticion_cantidad' => $actividad['repeticion_cantidad'] ?? 1,
+                    'repeticion_tipo'     => $actividad['repeticion_tipo'] ?? 'dia',
+                    'duracion_cantidad'   => $duracionCantidad,
+                    'duracion_tipo'       => $duracionTipo,
                 ];
                 
                 $this->planEstandarActividadModel->insert($actividadToInsert);

@@ -20,6 +20,10 @@ class PlanEstandarActividadModel extends Model
         'offset_inicio_dias',
         'offset_fin_dias',
         'orden',
+        'repeticion_cantidad',
+        'repeticion_tipo',
+        'duracion_cantidad',
+        'duracion_tipo',
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -33,11 +37,15 @@ class PlanEstandarActividadModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'plan_estandar_id'   => 'required|integer',
-        'nombre'             => 'required|max_length[180]',
-        'offset_inicio_dias' => 'required|integer|greater_than_equal_to[0]',
-        'offset_fin_dias'    => 'required|integer|greater_than_equal_to[0]',
-        'orden'              => 'permit_empty|integer',
+        'plan_estandar_id'    => 'required|integer',
+        'nombre'              => 'required|max_length[180]',
+        'offset_inicio_dias'  => 'required|integer|greater_than_equal_to[0]',
+        'offset_fin_dias'     => 'required|integer|greater_than_equal_to[0]',
+        'orden'               => 'permit_empty|integer',
+        'repeticion_cantidad' => 'permit_empty|integer|greater_than[0]',
+        'repeticion_tipo'     => 'permit_empty|in_list[dia,semana,mes]',
+        'duracion_cantidad'   => 'permit_empty|integer|greater_than[0]',
+        'duracion_tipo'       => 'permit_empty|in_list[dias,semanas,meses]',
     ];
     protected $validationMessages   = [];
     protected $skipValidation       = false;
