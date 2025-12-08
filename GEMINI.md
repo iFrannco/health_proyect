@@ -163,6 +163,16 @@ Conserva `.gitkeep` en carpetas vacías. Usa **un** layout base y **sidebars por
 
 * `orden` (INT)
 
+* `vigente` (BOOL DEFAULT TRUE) — indica si la actividad está habilitada en la plantilla
+
+* `frecuencia_repeticiones` (INT) — Para UI "X veces al Y"
+
+* `frecuencia_periodo` (VARCHAR) — Para UI "X veces al Y"
+
+* `duracion_valor` (INT) — Para UI "durante Z"
+
+* `duracion_unidad` (VARCHAR) — Para UI "durante Z"
+
 ### **`planes_cuidado` *(instancia para un diagnóstico)***
 
 * `id` (PK)
