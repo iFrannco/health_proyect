@@ -8,8 +8,11 @@ use App\Models\ActividadModel;
 use App\Models\CategoriaActividadModel;
 use App\Models\DiagnosticoModel;
 use App\Models\EstadoActividadModel;
+use App\Models\PlanEstandarActividadModel;
+use App\Models\PlanEstandarModel;
 use App\Models\PlanCuidadoModel;
 use App\Models\UserModel;
+use App\Libraries\CarePlanTemplate;
 use App\Exceptions\PageForbiddenException;
 use App\Services\PlanEstadoService;
 use CodeIgniter\Database\Exceptions\DatabaseException;
@@ -26,6 +29,9 @@ class Planes extends BaseController
     private EstadoActividadModel $estadoActividadModel;
     private CategoriaActividadModel $categoriaActividadModel;
     private UserModel $userModel;
+    private PlanEstandarModel $planEstandarModel;
+    private PlanEstandarActividadModel $planEstandarActividadModel;
+    private CarePlanTemplate $carePlanTemplate;
 
     public function __construct()
     {
@@ -35,6 +41,9 @@ class Planes extends BaseController
         $this->estadoActividadModel = new EstadoActividadModel();
         $this->categoriaActividadModel = new CategoriaActividadModel();
         $this->userModel            = new UserModel();
+        $this->planEstandarModel    = new PlanEstandarModel();
+        $this->planEstandarActividadModel = new PlanEstandarActividadModel();
+        $this->carePlanTemplate     = new CarePlanTemplate();
     }
 
     public function index()
@@ -50,6 +59,7 @@ class Planes extends BaseController
                 'planes_cuidado.fecha_inicio',
                 'planes_cuidado.fecha_fin',
                 'planes_cuidado.fecha_creacion',
+                'planes_cuidado.plan_estandar_id',
                 'planes_cuidado.estado',
                 'planes_cuidado.creador_user_id',
                 'diagnosticos.descripcion AS diagnostico_descripcion',
@@ -139,6 +149,151 @@ class Planes extends BaseController
         ]);
     }
 
+    public function planesEstandarPorDiagnostico(): ResponseInterface
+    {
+        $diagnosticoId = (int) ($this->request->getGet('diagnostico_id') ?? 0);
+        $pacienteId    = (int) ($this->request->getGet('paciente_id') ?? 0);
+
+        if ($diagnosticoId <= 0) {
+            return $this->response->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Diagnóstico inválido.',
+                ]);
+        }
+
+        $diagnostico = $this->diagnosticoModel->asArray()
+            ->select(['id', 'destinatario_user_id', 'tipo_diagnostico_id'])
+            ->where('id', $diagnosticoId)
+            ->first();
+
+        if (! $diagnostico || ($pacienteId > 0 && (int) $diagnostico['destinatario_user_id'] !== $pacienteId)) {
+            return $this->response->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'El diagnóstico no es válido para el paciente seleccionado.',
+                ]);
+        }
+
+        $planes = $this->planEstandarModel->asArray()
+            ->select(['plan_estandar.id', 'plan_estandar.nombre', 'plan_estandar.descripcion', 'plan_estandar.version', 'plan_estandar.tipo_diagnostico_id'])
+            ->where('plan_estandar.vigente', 1)
+            ->where('plan_estandar.tipo_diagnostico_id', $diagnostico['tipo_diagnostico_id'])
+            ->orderBy('plan_estandar.nombre', 'ASC')
+            ->findAll();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data'    => [
+                'planes' => $planes,
+            ],
+        ]);
+    }
+
+    public function previsualizarPlanEstandar(): ResponseInterface
+    {
+        $planEstandarId = (int) ($this->request->getPost('plan_estandar_id') ?? 0);
+        $diagnosticoId  = (int) ($this->request->getPost('diagnostico_id') ?? 0);
+        $pacienteId     = (int) ($this->request->getPost('paciente_id') ?? 0);
+        $fechaInicio    = (string) ($this->request->getPost('fecha_inicio') ?? '');
+        $fechaFin       = (string) ($this->request->getPost('fecha_fin') ?? '');
+
+        if ($planEstandarId <= 0 || $diagnosticoId <= 0 || $fechaInicio === '') {
+            return $this->response->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Faltan datos para previsualizar la plantilla.',
+                ]);
+        }
+
+        $diagnostico = $this->diagnosticoModel->asArray()
+            ->select(['id', 'destinatario_user_id', 'tipo_diagnostico_id'])
+            ->where('id', $diagnosticoId)
+            ->first();
+
+        if (! $diagnostico || ($pacienteId > 0 && (int) $diagnostico['destinatario_user_id'] !== $pacienteId)) {
+            return $this->response->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'El diagnóstico no es válido para el paciente seleccionado.',
+                ]);
+        }
+
+        $planEstandar = $this->planEstandarModel
+            ->where('id', $planEstandarId)
+            ->where('vigente', 1)
+            ->first();
+
+        if ($planEstandar === null || (int) $planEstandar->tipo_diagnostico_id !== (int) $diagnostico['tipo_diagnostico_id']) {
+            return $this->response->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'La plantilla seleccionada no es válida para este diagnóstico.',
+                ]);
+        }
+
+        $actividadesPlantilla = $this->planEstandarActividadModel
+            ->where('plan_estandar_id', $planEstandarId)
+            ->where('vigente', 1)
+            ->orderBy('orden', 'ASC')
+            ->findAll();
+
+        if (empty($actividadesPlantilla)) {
+            return $this->response->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'La plantilla no tiene actividades vigentes.',
+                ]);
+        }
+
+        $categoriaDefaultId = $this->obtenerCategoriaActividadDefaultId();
+        if ($categoriaDefaultId === null) {
+            return $this->response->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'No hay categorías de actividad activas configuradas.',
+                ]);
+        }
+
+        try {
+            $resultado = $this->carePlanTemplate->materializar(
+                $actividadesPlantilla,
+                $fechaInicio,
+                $fechaFin !== '' ? $fechaFin : null,
+                $categoriaDefaultId
+            );
+        } catch (\Throwable $exception) {
+            return $this->response->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ]);
+        }
+
+        if (! empty($resultado['errores'])) {
+            return $this->response->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                ->setJSON([
+                    'success' => false,
+                    'message' => $resultado['errores'][0] ?? 'No se pudo generar la plantilla.',
+                    'errors'  => $resultado['errores'],
+                ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data'    => [
+                'plan'        => [
+                    'id'          => $planEstandar->id,
+                    'nombre'      => (string) $planEstandar->nombre,
+                    'descripcion' => (string) $planEstandar->descripcion,
+                    'version'     => (int) $planEstandar->version,
+                ],
+                'actividades' => $resultado['actividades'],
+                'fecha_fin_calculada' => $resultado['fecha_fin_calculada'] ?? null,
+            ],
+        ]);
+    }
+
     public function create()
     {
         $medico = $this->obtenerMedicoActual();
@@ -196,7 +351,7 @@ class Planes extends BaseController
             ],
             'fecha_fin' => [
                 'label' => 'Fecha de fin',
-                'rules' => 'required|valid_date[Y-m-d]',
+                'rules' => 'permit_empty|valid_date[Y-m-d]',
             ],
             'nombre' => [
                 'label' => 'Nombre del plan',
@@ -205,6 +360,10 @@ class Planes extends BaseController
             'descripcion' => [
                 'label' => 'Descripción del plan',
                 'rules' => 'permit_empty|max_length[2000]',
+            ],
+            'plan_estandar_id' => [
+                'label' => 'Plan de cuidado estándar',
+                'rules' => 'permit_empty|is_natural_no_zero',
             ],
         ];
 
@@ -215,14 +374,9 @@ class Planes extends BaseController
         $pacienteId    = (int) $this->request->getPost('paciente_id');
         $diagnosticoId = (int) $this->request->getPost('diagnostico_id');
         $fechaInicio   = $this->request->getPost('fecha_inicio');
-        $fechaFin      = $this->request->getPost('fecha_fin');
-
-        if ($fechaInicio > $fechaFin) {
-            return $this->redirectBackWithErrors('La fecha de inicio no puede ser posterior a la fecha de fin.', [
-                'fecha_inicio' => 'Debe ser anterior o igual a la fecha de fin.',
-                'fecha_fin'    => 'Debe ser posterior o igual a la fecha de inicio.',
-            ]);
-        }
+        $planEstandarId = (int) ($this->request->getPost('plan_estandar_id') ?? 0);
+        $usaPlantilla   = $planEstandarId > 0;
+        $fechaFinPost   = $this->request->getPost('fecha_fin');
 
         $paciente = $this->userModel->findActivoPorRol($pacienteId, UserModel::ROLE_PACIENTE);
         if (! $paciente) {
@@ -241,13 +395,79 @@ class Planes extends BaseController
             ]);
         }
 
-        $actividadesData = $this->extraerActividadesDesdeRequest($fechaInicio, $fechaFin);
-        if (! empty($actividadesData['erroresGenerales'])) {
-            return $this->redirectBackWithActividadErrors(
-                'Revisa las actividades ingresadas.',
-                $actividadesData['erroresGenerales'],
-                $actividadesData['erroresPorIndice']
-            );
+        $planEstandar = null;
+        $fechaFin = $fechaFinPost;
+        if ($usaPlantilla) {
+            $planEstandar = $this->planEstandarModel
+                ->where('id', $planEstandarId)
+                ->where('vigente', 1)
+                ->first();
+
+            if ($planEstandar === null || (int) $planEstandar->tipo_diagnostico_id !== (int) $diagnostico['tipo_diagnostico_id']) {
+                return $this->redirectBackWithErrors('La plantilla seleccionada no es válida para el diagnóstico elegido.', [
+                    'plan_estandar_id' => 'Selecciona un plan estándar vigente compatible con el diagnóstico.',
+                ]);
+            }
+
+            $actividadesPlantilla = $this->planEstandarActividadModel
+                ->where('plan_estandar_id', $planEstandarId)
+                ->where('vigente', 1)
+                ->orderBy('orden', 'ASC')
+                ->findAll();
+
+            if (empty($actividadesPlantilla)) {
+                return $this->redirectBackWithErrors('La plantilla seleccionada no tiene actividades vigentes.', [
+                    'plan_estandar_id' => 'Selecciona una plantilla con actividades activas.',
+                ]);
+            }
+
+            $categoriaDefaultId = $this->obtenerCategoriaActividadDefaultId();
+            if ($categoriaDefaultId === null) {
+                return $this->redirectBackWithErrors('No hay categorías de actividad activas disponibles. Contacta al administrador.', [
+                    'actividad_categoria_id' => 'Configura al menos una categoría activa.',
+                ]);
+            }
+
+            try {
+                $generacion = $this->carePlanTemplate->materializar(
+                    $actividadesPlantilla,
+                    $fechaInicio,
+                    $fechaFinPost ?: null,
+                    $categoriaDefaultId
+                );
+            } catch (\Throwable $exception) {
+                return $this->redirectBackWithErrors('No se pudo generar las actividades desde la plantilla.', [
+                    'plan_estandar_id' => $exception->getMessage(),
+                ]);
+            }
+
+            if (! empty($generacion['errores'])) {
+                return $this->redirectBackWithErrors('Revisa la plantilla seleccionada.', [
+                    'plan_estandar_id' => $generacion['errores'][0] ?? 'La plantilla contiene datos inválidos.',
+                ]);
+            }
+
+            $fechaFin = $generacion['fecha_fin_calculada'] ?? $fechaFinPost;
+            if (! $fechaFin) {
+                return $this->redirectBackWithErrors('No se pudo calcular la fecha fin del plan a partir de la plantilla.', [
+                    'fecha_fin' => 'La plantilla no devolvió una vigencia calculada.',
+                ]);
+            }
+
+            $actividadesData = [
+                'actividades'       => $generacion['actividades'] ?? [],
+                'erroresGenerales'  => [],
+                'erroresPorIndice'  => [],
+            ];
+        } else {
+            $actividadesData = $this->extraerActividadesDesdeRequest($fechaInicio, $fechaFin);
+            if (! empty($actividadesData['erroresGenerales'])) {
+                return $this->redirectBackWithActividadErrors(
+                    'Revisa las actividades ingresadas.',
+                    $actividadesData['erroresGenerales'],
+                    $actividadesData['erroresPorIndice']
+                );
+            }
         }
 
         $estadoPendiente = $this->estadoActividadModel->findBySlug('pendiente');
@@ -255,19 +475,32 @@ class Planes extends BaseController
             return $this->redirectBackWithErrors('No se encontró el estado inicial de actividades. Contacta al administrador.', []);
         }
 
+        if ($fechaInicio > $fechaFin) {
+            return $this->redirectBackWithErrors('La fecha de inicio no puede ser posterior a la fecha de fin.', [
+                'fecha_inicio' => 'Debe ser anterior o igual a la fecha de fin.',
+                'fecha_fin'    => 'Debe ser posterior o igual a la fecha de inicio.',
+            ]);
+        }
+
         $estadoPlan = PlanEstadoService::calcular(null, $fechaInicio, $fechaFin);
 
         $planData = [
             'diagnostico_id' => $diagnosticoId,
             'creador_user_id' => $medico->id,
-            'plan_estandar_id' => null,
-            'nombre'         => $this->request->getPost('nombre') ?: null,
-            'descripcion'    => $this->request->getPost('descripcion') ?: null,
+            'plan_estandar_id' => $usaPlantilla ? $planEstandarId : null,
+            'nombre'         => $usaPlantilla ? ($planEstandar->nombre ?? null) : ($this->request->getPost('nombre') ?: null),
+            'descripcion'    => $usaPlantilla ? ($planEstandar->descripcion ?? null) : ($this->request->getPost('descripcion') ?: null),
             'fecha_creacion' => date('Y-m-d H:i:s'),
             'fecha_inicio'   => $fechaInicio,
             'fecha_fin'      => $fechaFin,
             'estado'         => $estadoPlan['estado'],
         ];
+
+        if (empty($actividadesData['actividades'])) {
+            return $this->redirectBackWithErrors('Se requiere al menos una actividad para crear el plan.', [
+                'plan_estandar_id' => 'La plantilla no generó actividades válidas.',
+            ]);
+        }
 
         $db = $this->planCuidadoModel->db;
         $db->transBegin();
@@ -533,7 +766,7 @@ class Planes extends BaseController
             ],
             'fecha_fin' => [
                 'label' => 'Fecha de fin',
-                'rules' => 'required|valid_date[Y-m-d]',
+                'rules' => 'permit_empty|valid_date[Y-m-d]',
             ],
             'nombre' => [
                 'label' => 'Nombre del plan',
@@ -551,6 +784,9 @@ class Planes extends BaseController
 
         $fechaInicio = $this->request->getPost('fecha_inicio');
         $fechaFin    = $this->request->getPost('fecha_fin');
+        if ($usaPlantilla) {
+            $fechaFin = $plan['fecha_fin']; // mantener fecha fin calculada al crear
+        }
 
         if ($fechaInicio > $fechaFin) {
             return $this->redirectBackWithErrors('La fecha de inicio no puede ser posterior a la fecha de fin.', [
@@ -559,43 +795,76 @@ class Planes extends BaseController
             ]);
         }
 
-        $actividadesData = $this->extraerActividadesDesdeRequest($fechaInicio, $fechaFin);
-        if (! empty($actividadesData['erroresGenerales'])) {
-            return $this->redirectBackWithActividadErrors(
-                'Revisa las actividades ingresadas.',
-                $actividadesData['erroresGenerales'],
-                $actividadesData['erroresPorIndice']
-            );
-        }
+        $usaPlantilla = (int) ($plan['plan_estandar_id'] ?? 0) > 0;
+
+        $actividadesData = [
+            'actividades'       => [],
+            'erroresGenerales'  => [],
+            'erroresPorIndice'  => [],
+        ];
 
         $actividadesExistentes = $this->actividadModel
             ->where('plan_id', $plan['id'])
             ->findAll();
 
-        $actividadesPorId = [];
-        foreach ($actividadesExistentes as $actividad) {
-            $actividadesPorId[$actividad->id] = $actividad;
-        }
+        if (! $usaPlantilla) {
+            $actividadesData = $this->extraerActividadesDesdeRequest($fechaInicio, $fechaFin);
+            if (! empty($actividadesData['erroresGenerales'])) {
+                return $this->redirectBackWithActividadErrors(
+                    'Revisa las actividades ingresadas.',
+                    $actividadesData['erroresGenerales'],
+                    $actividadesData['erroresPorIndice']
+                );
+            }
 
-        $idsInvalidos = array_filter(array_map(static function ($actividad) {
-            return $actividad['id'] ?? null;
-        }, $actividadesData['actividades']), static fn ($id) => $id !== null && $id > 0);
+            $actividadesPorId = [];
+            foreach ($actividadesExistentes as $actividad) {
+                $actividadesPorId[$actividad->id] = $actividad;
+            }
 
-        $idsInvalidos = array_filter($idsInvalidos, static function ($id) use ($actividadesPorId) {
-            return ! array_key_exists($id, $actividadesPorId);
-        });
+            $idsInvalidos = array_filter(array_map(static function ($actividad) {
+                return $actividad['id'] ?? null;
+            }, $actividadesData['actividades']), static fn ($id) => $id !== null && $id > 0);
 
-        if (! empty($idsInvalidos)) {
-            return $this->redirectBackWithActividadErrors(
-                'No se pudo actualizar el plan.',
-                ['Una de las actividades no es válida para este plan.'],
-                $actividadesData['erroresPorIndice']
-            );
-        }
+            $idsInvalidos = array_filter($idsInvalidos, static function ($id) use ($actividadesPorId) {
+                return ! array_key_exists($id, $actividadesPorId);
+            });
 
-        $estadoPendiente = $this->estadoActividadModel->findBySlug('pendiente');
-        if ($estadoPendiente === null) {
-            return $this->redirectBackWithErrors('No se encontró el estado inicial de actividades. Contacta al administrador.', []);
+            if (! empty($idsInvalidos)) {
+                return $this->redirectBackWithActividadErrors(
+                    'No se pudo actualizar el plan.',
+                    ['Una de las actividades no es válida para este plan.'],
+                    $actividadesData['erroresPorIndice']
+                );
+            }
+
+            $estadoPendiente = $this->estadoActividadModel->findBySlug('pendiente');
+            if ($estadoPendiente === null) {
+                return $this->redirectBackWithErrors('No se encontró el estado inicial de actividades. Contacta al administrador.', []);
+            }
+        } else {
+            foreach ($actividadesExistentes as $actividad) {
+                $fechaInicioActividad = $actividad->fecha_inicio instanceof \CodeIgniter\I18n\Time
+                    ? $actividad->fecha_inicio->toDateString()
+                    : (string) $actividad->fecha_inicio;
+
+                $fechaFinActividad = $actividad->fecha_fin instanceof \CodeIgniter\I18n\Time
+                    ? $actividad->fecha_fin->toDateString()
+                    : (string) $actividad->fecha_fin;
+
+                if (
+                    ($fechaInicioActividad !== '' && $fechaInicioActividad < $fechaInicio)
+                    || ($fechaFinActividad !== '' && $fechaFinActividad > $fechaFin)
+                ) {
+                    return $this->redirectBackWithErrors(
+                        'Las fechas del plan deben cubrir las actividades generadas por la plantilla.',
+                        [
+                            'fecha_inicio' => 'No puede ser posterior al inicio de las actividades generadas.',
+                            'fecha_fin'    => 'No puede ser anterior al fin de las actividades generadas.',
+                        ]
+                    );
+                }
+            }
         }
 
         $db = $this->planCuidadoModel->db;
@@ -604,8 +873,8 @@ class Planes extends BaseController
         try {
             $estadoRecalculado = PlanEstadoService::calcular(null, $fechaInicio, $fechaFin);
             $planPayload = [
-                'nombre'      => $this->request->getPost('nombre') ?: null,
-                'descripcion' => $this->request->getPost('descripcion') ?: null,
+                'nombre'      => $usaPlantilla ? ($plan['nombre'] ?? null) : ($this->request->getPost('nombre') ?: null),
+                'descripcion' => $usaPlantilla ? ($plan['descripcion'] ?? null) : ($this->request->getPost('descripcion') ?: null),
                 'fecha_inicio'=> $fechaInicio,
                 'fecha_fin'   => $fechaFin,
                 'estado'      => $estadoRecalculado['estado'],
@@ -615,98 +884,100 @@ class Planes extends BaseController
                 throw new DataException('No se pudo actualizar el plan de cuidado.');
             }
 
-            $idsPersistidos = [];
+            if (! $usaPlantilla) {
+                $idsPersistidos = [];
 
-            foreach ($actividadesData['actividades'] as $actividadInput) {
-                $actividadId = $actividadInput['id'] ?? null;
+                foreach ($actividadesData['actividades'] as $actividadInput) {
+                    $actividadId = $actividadInput['id'] ?? null;
 
-                if ($actividadId !== null && $actividadId > 0) {
-                    $idsPersistidos[] = $actividadId;
-                    $actividadEntity = $actividadesPorId[$actividadId] ?? null;
+                    if ($actividadId !== null && $actividadId > 0) {
+                        $idsPersistidos[] = $actividadId;
+                        $actividadEntity = $actividadesPorId[$actividadId] ?? null;
+                        $payload = [
+                            'nombre'                 => $actividadInput['nombre'],
+                            'descripcion'            => $actividadInput['descripcion'],
+                            'fecha_inicio'           => $actividadInput['fecha_inicio'],
+                            'fecha_fin'              => $actividadInput['fecha_fin'],
+                            'categoria_actividad_id' => $actividadInput['categoria_actividad_id'],
+                        ];
+
+                        if ($actividadEntity !== null) {
+                            $fechaInicioOriginal = $actividadEntity->fecha_inicio;
+                            if ($fechaInicioOriginal instanceof \CodeIgniter\I18n\Time) {
+                                $fechaInicioOriginal = $fechaInicioOriginal->toDateString();
+                            }
+
+                            $fechaFinOriginal = $actividadEntity->fecha_fin;
+                            if ($fechaFinOriginal instanceof \CodeIgniter\I18n\Time) {
+                                $fechaFinOriginal = $fechaFinOriginal->toDateString();
+                            }
+
+                            $haCambiado = (
+                                (string) $actividadEntity->nombre !== $actividadInput['nombre']
+                                || (string) $actividadEntity->descripcion !== $actividadInput['descripcion']
+                                || (string) $fechaInicioOriginal !== $actividadInput['fecha_inicio']
+                                || (string) $fechaFinOriginal !== $actividadInput['fecha_fin']
+                                || (int) $actividadEntity->categoria_actividad_id !== (int) $actividadInput['categoria_actividad_id']
+                            );
+
+                            $cambioSoloCategoria = (int) $actividadEntity->categoria_actividad_id !== (int) $actividadInput['categoria_actividad_id'];
+
+                            if ($cambioSoloCategoria && $actividadEntity->validado === true) {
+                                $db->transRollback();
+
+                                $erroresCategoria = [
+                                    $actividadInput['indice'] ?? 0 => [
+                                        'categoria' => 'No puedes cambiar la categoría de una actividad ya validada.',
+                                    ],
+                                ];
+
+                                return $this->redirectBackWithActividadErrors(
+                                    'No se pudo actualizar el plan.',
+                                    ['Las actividades validadas mantienen su categoría.'],
+                                    $erroresCategoria + $actividadesData['erroresPorIndice']
+                                );
+                            }
+
+                            if ($haCambiado && $actividadEntity->validado === true) {
+                                $payload['validado'] = null;
+                                $payload['estado_id'] = $estadoPendiente['id'];
+                                $payload['fecha_validacion'] = null;
+                            }
+                        }
+
+                        if ($this->actividadModel->update($actividadId, $payload) === false) {
+                            throw new DataException('No se pudo actualizar una de las actividades.');
+                        }
+
+                        continue;
+                    }
+
                     $payload = [
-                        'nombre'                 => $actividadInput['nombre'],
-                        'descripcion'            => $actividadInput['descripcion'],
-                        'fecha_inicio'           => $actividadInput['fecha_inicio'],
-                        'fecha_fin'              => $actividadInput['fecha_fin'],
+                        'plan_id'        => $plan['id'],
+                        'nombre'         => $actividadInput['nombre'],
+                        'descripcion'    => $actividadInput['descripcion'],
+                        'fecha_creacion' => date('Y-m-d H:i:s'),
+                        'fecha_inicio'   => $actividadInput['fecha_inicio'],
+                        'fecha_fin'      => $actividadInput['fecha_fin'],
+                        'estado_id'      => $estadoPendiente['id'],
                         'categoria_actividad_id' => $actividadInput['categoria_actividad_id'],
+                        'validado'       => null,
+                        'fecha_validacion'     => null,
                     ];
 
-                    if ($actividadEntity !== null) {
-                        $fechaInicioOriginal = $actividadEntity->fecha_inicio;
-                        if ($fechaInicioOriginal instanceof \CodeIgniter\I18n\Time) {
-                            $fechaInicioOriginal = $fechaInicioOriginal->toDateString();
-                        }
+                    if ($this->actividadModel->insert($payload) === false) {
+                        throw new DataException('No se pudo crear una actividad del plan.');
+                    }
+                }
 
-                        $fechaFinOriginal = $actividadEntity->fecha_fin;
-                        if ($fechaFinOriginal instanceof \CodeIgniter\I18n\Time) {
-                            $fechaFinOriginal = $fechaFinOriginal->toDateString();
-                        }
-
-                        $haCambiado = (
-                            (string) $actividadEntity->nombre !== $actividadInput['nombre']
-                            || (string) $actividadEntity->descripcion !== $actividadInput['descripcion']
-                            || (string) $fechaInicioOriginal !== $actividadInput['fecha_inicio']
-                            || (string) $fechaFinOriginal !== $actividadInput['fecha_fin']
-                            || (int) $actividadEntity->categoria_actividad_id !== (int) $actividadInput['categoria_actividad_id']
-                        );
-
-                        $cambioSoloCategoria = (int) $actividadEntity->categoria_actividad_id !== (int) $actividadInput['categoria_actividad_id'];
-
-                        if ($cambioSoloCategoria && $actividadEntity->validado === true) {
-                            $db->transRollback();
-
-                            $erroresCategoria = [
-                                $actividadInput['indice'] ?? 0 => [
-                                    'categoria' => 'No puedes cambiar la categoría de una actividad ya validada.',
-                                ],
-                            ];
-
-                            return $this->redirectBackWithActividadErrors(
-                                'No se pudo actualizar el plan.',
-                                ['Las actividades validadas mantienen su categoría.'],
-                                $erroresCategoria + $actividadesData['erroresPorIndice']
-                            );
-                        }
-
-                        if ($haCambiado && $actividadEntity->validado === true) {
-                            $payload['validado'] = null;
-                            $payload['estado_id'] = $estadoPendiente['id'];
-                            $payload['fecha_validacion'] = null;
-                        }
+                foreach ($actividadesPorId as $actividadId => $actividadEntity) {
+                    if (in_array($actividadId, $idsPersistidos, true)) {
+                        continue;
                     }
 
-                    if ($this->actividadModel->update($actividadId, $payload) === false) {
-                        throw new DataException('No se pudo actualizar una de las actividades.');
+                    if ($this->actividadModel->delete($actividadId) === false) {
+                        throw new DataException('No se pudo eliminar una actividad del plan.');
                     }
-
-                    continue;
-                }
-
-                $payload = [
-                    'plan_id'        => $plan['id'],
-                    'nombre'         => $actividadInput['nombre'],
-                    'descripcion'    => $actividadInput['descripcion'],
-                    'fecha_creacion' => date('Y-m-d H:i:s'),
-                    'fecha_inicio'   => $actividadInput['fecha_inicio'],
-                    'fecha_fin'      => $actividadInput['fecha_fin'],
-                    'estado_id'      => $estadoPendiente['id'],
-                    'categoria_actividad_id' => $actividadInput['categoria_actividad_id'],
-                    'validado'       => null,
-                    'fecha_validacion'     => null,
-                ];
-
-                if ($this->actividadModel->insert($payload) === false) {
-                    throw new DataException('No se pudo crear una actividad del plan.');
-                }
-            }
-
-            foreach ($actividadesPorId as $actividadId => $actividadEntity) {
-                if (in_array($actividadId, $idsPersistidos, true)) {
-                    continue;
-                }
-
-                if ($this->actividadModel->delete($actividadId) === false) {
-                    throw new DataException('No se pudo eliminar una actividad del plan.');
                 }
             }
         } catch (DataException | DatabaseException $exception) {
@@ -821,6 +1092,35 @@ class Planes extends BaseController
         return redirect()->to(route_to('medico_planes_index'));
     }
 
+    private function obtenerCategoriaActividadDefaultId(): ?int
+    {
+        $categoriasActivas = $this->categoriaActividadModel->findActivas();
+        if (! empty($categoriasActivas)) {
+            foreach ($categoriasActivas as $categoria) {
+                if ((int) ($categoria['id'] ?? 0) === 1) {
+                    return 1;
+                }
+            }
+
+            $primera = $categoriasActivas[0]['id'] ?? null;
+            return $primera !== null ? (int) $primera : null;
+        }
+
+        // Si no hay categorías activas, se crea una genérica para no bloquear la generación.
+        $categoriaDefault = [
+            'nombre'       => 'General',
+            'descripcion'  => 'Categoría por defecto para actividades generadas',
+            'color_hex'    => '#6c757d',
+            'activo'       => 1,
+            'created_at'   => date('Y-m-d H:i:s'),
+            'updated_at'   => date('Y-m-d H:i:s'),
+        ];
+
+        $categoriaId = $this->categoriaActividadModel->insert($categoriaDefault, true);
+
+        return $categoriaId !== false ? (int) $categoriaId : null;
+    }
+
     private function extraerActividadesDesdeRequest(?string $planFechaInicio = null, ?string $planFechaFin = null): array
     {
         $nombres       = (array) $this->request->getPost('actividad_nombre');
@@ -880,9 +1180,7 @@ class Planes extends BaseController
                 $erroresFila['nombre'] = 'El nombre no debe superar los 120 caracteres.';
             }
 
-            if ($descripcion === '') {
-                $erroresFila['descripcion'] = 'La descripción es obligatoria.';
-            } elseif (strlen($descripcion) > 2000) {
+            if ($descripcion !== '' && strlen($descripcion) > 2000) {
                 $erroresFila['descripcion'] = 'La descripción no debe superar los 2000 caracteres.';
             }
 
@@ -922,7 +1220,7 @@ class Planes extends BaseController
                 'id'                     => $actividadId,
                 'indice'                 => $index,
                 'nombre'                 => $nombre,
-                'descripcion'            => $descripcion,
+                'descripcion'            => $descripcion === '' ? null : $descripcion,
                 'fecha_inicio'           => $fechaInicio,
                 'fecha_fin'              => $fechaFin,
                 'categoria_actividad_id' => $categoriaId,
@@ -956,6 +1254,7 @@ class Planes extends BaseController
                 'planes_cuidado.fecha_inicio',
                 'planes_cuidado.fecha_fin',
                 'planes_cuidado.estado',
+                'planes_cuidado.plan_estandar_id',
                 'diagnosticos.descripcion AS diagnostico_descripcion',
                 'diagnosticos.destinatario_user_id AS paciente_id',
                 'paciente.nombre AS paciente_nombre',

@@ -9,9 +9,9 @@ $actividadErrors = $actividadErrors ?? [];
     <div class="col-12">
         <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
             <div>
-                <h1 class="mb-1">Nuevo plan personalizado</h1>
+                <h1 class="mb-1">Nuevo plan de cuidado</h1>
                 <p class="text-muted mb-0">
-                    Define manualmente un plan de cuidado asociado a un diagnóstico existente.
+                    Define un plan personalizado o instáncialo desde un plan estándar vigente, asociado a un diagnóstico existente.
                 </p>
             </div>
             <a href="<?= route_to('medico_planes_index') ?>" class="btn btn-outline-secondary">

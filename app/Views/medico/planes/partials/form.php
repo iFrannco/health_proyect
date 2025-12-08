@@ -36,6 +36,8 @@ $oldFechasInicio  = (array) old('actividad_fecha_inicio');
 $oldFechasFin     = (array) old('actividad_fecha_fin');
 $oldCategorias    = (array) old('actividad_categoria_id');
 $oldIds           = (array) old('actividad_id');
+$planEstandarIdSeleccionado = (int) old('plan_estandar_id', $plan['plan_estandar_id'] ?? 0);
+$esPlanEstandar = $planEstandarIdSeleccionado > 0;
 
 $actividadesForm = [];
 
@@ -115,6 +117,7 @@ $diagnosticoDeshabilitado = ! $selectedPacienteId;
     <?php if ($formMethod !== 'post'): ?>
         <input type="hidden" name="_method" value="<?= esc(strtoupper($formMethod)) ?>">
     <?php endif; ?>
+    <input type="hidden" name="plan_estandar_id" id="plan_estandar_id_hidden" value="<?= esc($planEstandarIdSeleccionado ?: '') ?>">
 
     <div class="card card-outline card-primary">
         <div class="card-header">
@@ -125,7 +128,7 @@ $diagnosticoDeshabilitado = ! $selectedPacienteId;
                 <div class="form-group col-md-6">
                     <label for="paciente_id">Paciente <?= $isEdit ? '' : '<span class="text-danger">*</span>' ?></label>
                     <?php if ($isEdit): ?>
-                        <input type="hidden" name="paciente_id" value="<?= esc($plan['paciente_id'] ?? '') ?>">
+                        <input type="hidden" name="paciente_id" id="paciente_id" value="<?= esc($plan['paciente_id'] ?? '') ?>">
                         <input type="text" class="form-control" value="<?= esc($pacienteNombreCompleto ?? 'Paciente sin datos') ?>" readonly>
                     <?php else: ?>
                         <input type="hidden" name="paciente_id" id="paciente_id" value="<?= esc($selectedPacienteId ?? '') ?>">
@@ -168,7 +171,7 @@ $diagnosticoDeshabilitado = ! $selectedPacienteId;
                 <div class="form-group col-md-6">
                     <label for="diagnostico_id">Diagnóstico <?= $isEdit ? '' : '<span class="text-danger">*</span>' ?></label>
                     <?php if ($isEdit): ?>
-                        <input type="hidden" name="diagnostico_id" value="<?= esc($plan['diagnostico_id'] ?? '') ?>">
+                        <input type="hidden" name="diagnostico_id" id="diagnostico_id" value="<?= esc($plan['diagnostico_id'] ?? '') ?>">
                         <input type="text" class="form-control" value="<?= esc($descripcionDiagnostico ? ('Diag #' . ($plan['diagnostico_id'] ?? '') . ' — ' . $descripcionDiagnostico) : 'Diagnóstico sin descripción') ?>" readonly>
                     <?php else: ?>
                         <select name="diagnostico_id" id="diagnostico_id" class="form-control <?= isset($errores['diagnostico_id']) ? 'is-invalid' : '' ?>" required <?= $diagnosticoDeshabilitado ? 'disabled' : '' ?>>
@@ -195,6 +198,38 @@ $diagnosticoDeshabilitado = ! $selectedPacienteId;
                     <?php endif; ?>
                 </div>
             </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="plan_estandar_selector">Plan de cuidado estándar (opcional)</label>
+                    <select id="plan_estandar_selector"
+                            class="form-control <?= isset($errores['plan_estandar_id']) ? 'is-invalid' : '' ?>"
+                            data-plan-seleccionado="<?= esc($planEstandarIdSeleccionado) ?>"
+                            data-locked="<?= $esPlanEstandar && $isEdit ? '1' : '0' ?>"
+                            <?= $diagnosticoDeshabilitado ? 'disabled' : '' ?>
+                            <?= $esPlanEstandar && $isEdit ? 'disabled' : '' ?>>
+                        <option value="">Plan personalizado (sin plantilla)</option>
+                    </select>
+                    <small class="form-text text-muted">
+                        Se habilita al seleccionar un diagnóstico y lista solo plantillas vigentes del mismo tipo.
+                    </small>
+                    <?php if (isset($errores['plan_estandar_id'])): ?>
+                        <div class="invalid-feedback"><?= esc($errores['plan_estandar_id']) ?></div>
+                    <?php endif; ?>
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Detalle de la plantilla</label>
+                    <div id="plan-estandar-resumen" class="alert alert-info <?= $esPlanEstandar ? '' : 'd-none' ?>">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong id="plan-estandar-nombre"><?= esc($esPlanEstandar ? ($nombrePlan ?: 'Plan estándar') : '') ?></strong>
+                                <div class="small text-muted mb-0" id="plan-estandar-version"></div>
+                            </div>
+                            <span class="badge badge-light" id="plan-estandar-estado"><?= $esPlanEstandar ? 'Plantilla vigente' : '' ?></span>
+                        </div>
+                        <p class="mb-0 mt-2 small" id="plan-estandar-descripcion"><?= esc($esPlanEstandar ? ($descripcionPlan ?? '') : '') ?></p>
+                    </div>
+                </div>
+            </div>
 
             <div class="form-row">
                 <div class="form-group col-md-6">
@@ -202,6 +237,7 @@ $diagnosticoDeshabilitado = ! $selectedPacienteId;
                     <input type="text" name="nombre" id="nombre" maxlength="180"
                            value="<?= esc($nombrePlan) ?>"
                            class="form-control <?= isset($errores['nombre']) ? 'is-invalid' : '' ?>"
+                           <?= $esPlanEstandar ? 'readonly' : '' ?>
                            placeholder="Ej. Plan de control post operatorio">
                     <?php if (isset($errores['nombre'])): ?>
                         <div class="invalid-feedback"><?= esc($errores['nombre']) ?></div>
@@ -218,7 +254,7 @@ $diagnosticoDeshabilitado = ! $selectedPacienteId;
                 <div class="form-group col-md-3">
                     <label for="fecha_fin">Fecha fin <span class="text-danger">*</span></label>
                     <input type="date" name="fecha_fin" id="fecha_fin" value="<?= esc($fechaFin) ?>"
-                           class="form-control <?= isset($errores['fecha_fin']) ? 'is-invalid' : '' ?>" required>
+                           class="form-control <?= isset($errores['fecha_fin']) ? 'is-invalid' : '' ?>" required <?= $esPlanEstandar ? 'readonly' : '' ?>>
                     <?php if (isset($errores['fecha_fin'])): ?>
                         <div class="invalid-feedback"><?= esc($errores['fecha_fin']) ?></div>
                     <?php endif; ?>
@@ -229,6 +265,7 @@ $diagnosticoDeshabilitado = ! $selectedPacienteId;
                 <label for="descripcion">Descripción del plan</label>
                 <textarea name="descripcion" id="descripcion" rows="3" maxlength="2000"
                           class="form-control <?= isset($errores['descripcion']) ? 'is-invalid' : '' ?>"
+                          <?= $esPlanEstandar ? 'readonly' : '' ?>
                           placeholder="Contexto clínico, objetivos, consideraciones"><?= esc($descripcionPlan) ?></textarea>
                 <?php if (isset($errores['descripcion'])): ?>
                     <div class="invalid-feedback"><?= esc($errores['descripcion']) ?></div>
@@ -237,7 +274,7 @@ $diagnosticoDeshabilitado = ! $selectedPacienteId;
         </div>
     </div>
 
-    <div class="card card-outline card-secondary">
+    <div class="card card-outline card-secondary <?= $esPlanEstandar ? 'd-none' : '' ?>" id="card-actividades-manuales">
         <div class="card-header">
             <h3 class="card-title mb-0">Actividades del plan</h3>
         </div>
@@ -321,6 +358,35 @@ $diagnosticoDeshabilitado = ! $selectedPacienteId;
             <p class="text-muted mb-0">
                 Añade al menos una actividad. Todas comienzan en estado <strong>sin iniciar</strong>.
             </p>
+        </div>
+    </div>
+
+    <div class="card card-outline card-secondary <?= $esPlanEstandar ? '' : 'd-none' ?>" id="card-actividades-estandar">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Actividades generadas (plan estándar)</h3>
+        </div>
+        <div class="card-body" id="contenedor-actividades-estandar">
+            <div id="alerta-actividades-estandar" class="alert alert-info <?= $esPlanEstandar && !empty($actividades) ? 'd-none' : '' ?>">
+                Selecciona un plan estándar y define las fechas para generar las actividades.
+            </div>
+            <div id="lista-actividades-estandar">
+                <?php if ($esPlanEstandar && ! empty($actividades)): ?>
+                    <?php foreach ($actividades as $index => $actividad): ?>
+                        <div class="border rounded p-3 mb-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong><?= esc($actividad['nombre'] ?? 'Actividad') ?></strong>
+                                    <div class="small text-muted mb-1"><?= esc($actividad['descripcion'] ?? '') ?></div>
+                                </div>
+                                <span class="badge badge-light">Actividad <?= esc($index + 1) ?></span>
+                            </div>
+                            <div class="text-muted small mb-0">
+                                <?= esc($actividad['fecha_inicio'] ?? '-') ?> → <?= esc($actividad['fecha_fin'] ?? '-') ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 

@@ -83,6 +83,9 @@ if ($descripcionDiagnostico === '') {
     $descripcionDiagnostico = 'Diagnóstico sin descripción';
 }
 
+$esPlanEstandar = ! empty($plan['plan_estandar_id']);
+$origenBadgeClass = $esPlanEstandar ? 'badge-info' : 'badge-secondary';
+$origenTexto = $esPlanEstandar ? 'Plan estándar' : 'Plan personalizado';
 $planEstado      = $planEstado ?? [];
 $estadoSlugPlan  = (string) ($planEstado['estado'] ?? $plan['estado'] ?? '');
 $planFinalizado  = $estadoSlugPlan === 'finalizado';
@@ -190,6 +193,12 @@ $fechaCreacion = $formatearFecha($plan['fecha_creacion'] ?? null, true);
                             <?php if ($puedeFinalizar): ?>
                                 <small class="text-warning d-block mt-1">La vigencia concluyó. Puedes finalizar el plan.</small>
                             <?php endif; ?>
+                        </p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <h6 class="text-muted text-uppercase mb-1">Origen</h6>
+                        <p class="mb-0">
+                            <span class="badge <?= esc($origenBadgeClass) ?>"><?= esc($origenTexto) ?></span>
                         </p>
                     </div>
                     <div class="col-md-8 mb-3">

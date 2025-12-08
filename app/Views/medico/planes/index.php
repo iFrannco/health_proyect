@@ -5,9 +5,9 @@
     <div class="col-12">
         <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
             <div>
-                <h1 class="mb-1">Planes personalizados</h1>
+                <h1 class="mb-1">Planes de cuidado</h1>
                 <p class="text-muted mb-0">
-                    Consulta y registra planes de cuidado manuales vinculados a tus diagnósticos.
+                    Consulta y registra planes de cuidado personalizados o basados en plantillas estándar.
                 </p>
             </div>
             <a href="<?= route_to('medico_planes_create') ?>" class="btn btn-primary">
@@ -42,6 +42,7 @@
                                     <th scope="col">Paciente</th>
                                     <th scope="col">Diagnóstico</th>
                                     <th scope="col">Nombre</th>
+                                    <th scope="col">Tipo</th>
                                     <th scope="col" class="text-nowrap">Vigencia</th>
                                     <th scope="col" class="text-nowrap">Creado</th>
                                     <th scope="col" class="text-right">Acciones</th>
@@ -62,6 +63,7 @@
                                     $fechaInicio = $plan['fecha_inicio'] ? date('d/m/Y', strtotime($plan['fecha_inicio'])) : '-';
                                     $fechaFin    = $plan['fecha_fin'] ? date('d/m/Y', strtotime($plan['fecha_fin'])) : '-';
                                     $fechaCreacion = $plan['fecha_creacion'] ? date('d/m/Y H:i', strtotime($plan['fecha_creacion'])) : '-';
+                                    $tipoBadge = $plan['plan_estandar_id'] ? '<span class="badge badge-info">Estándar</span>' : '<span class="badge badge-secondary">Personalizado</span>';
                                     ?>
                                     <tr>
                                         <td><?= esc($pacienteNombre ?: 'Paciente sin datos') ?></td>
@@ -71,6 +73,7 @@
                                                 <?= esc($nombrePlan) ?>
                                             </a>
                                         </td>
+                                        <td><?= $tipoBadge ?></td>
                                         <td class="text-nowrap"><?= esc($fechaInicio . ' → ' . $fechaFin) ?></td>
                                         <td class="text-nowrap"><?= esc($fechaCreacion) ?></td>
                                         <td class="text-right">

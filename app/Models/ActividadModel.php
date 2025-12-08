@@ -32,7 +32,7 @@ class ActividadModel extends Model
     protected $validationRules  = [
         'plan_id'      => 'required|is_natural_no_zero',
         'nombre'       => 'required|min_length[1]|max_length[120]',
-        'descripcion'  => 'required|min_length[1]|max_length[2000]',
+        'descripcion'  => 'permit_empty|max_length[2000]',
         'fecha_inicio' => 'required',
         'fecha_fin'    => 'required',
         'estado_id'    => 'required|is_natural_no_zero',

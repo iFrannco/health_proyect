@@ -11,6 +11,19 @@
         const diagnosticoSelect = document.getElementById('diagnostico_id');
         const btnAgregarActividad = document.getElementById('btn-agregar-actividad');
         const contenedorActividades = document.getElementById('contenedor-actividades');
+        const cardActividadesManuales = document.getElementById('card-actividades-manuales');
+        const cardActividadesEstandar = document.getElementById('card-actividades-estandar');
+        const alertaActividadesEstandar = document.getElementById('alerta-actividades-estandar');
+        const listaActividadesEstandar = document.getElementById('lista-actividades-estandar');
+        const planEstandarSelector = document.getElementById('plan_estandar_selector');
+        const planEstandarHidden = document.getElementById('plan_estandar_id_hidden');
+        const planResumen = document.getElementById('plan-estandar-resumen');
+        const planResumenNombre = document.getElementById('plan-estandar-nombre');
+        const planResumenVersion = document.getElementById('plan-estandar-version');
+        const planResumenDescripcion = document.getElementById('plan-estandar-descripcion');
+        const planResumenEstado = document.getElementById('plan-estandar-estado');
+        const fechaInicioInput = document.getElementById('fecha_inicio');
+        const fechaFinInput = document.getElementById('fecha_fin');
         const templateEl = document.getElementById('actividad-template');
         const template = templateEl ? templateEl.innerHTML : '';
 
@@ -40,6 +53,10 @@
             });
 
             diagnosticoSelect.disabled = !hayDiagnosticos;
+
+            if (!hayDiagnosticos) {
+                resetPlanEstandar();
+            }
         }
 
         function limpiarResultados() {
@@ -80,6 +97,277 @@
             });
         }
 
+        function resetPlanEstandar() {
+            if (planEstandarHidden) {
+                planEstandarHidden.value = '';
+            }
+            if (planEstandarSelector) {
+                planEstandarSelector.value = '';
+                planEstandarSelector.innerHTML = '<option value=\"\">Plan personalizado (sin plantilla)</option>';
+                planEstandarSelector.disabled = true;
+            }
+            if (planResumen) {
+                planResumen.classList.add('d-none');
+            }
+            if (planResumenNombre) {
+                planResumenNombre.textContent = '';
+            }
+            if (planResumenDescripcion) {
+                planResumenDescripcion.textContent = '';
+            }
+            if (planResumenVersion) {
+                planResumenVersion.textContent = '';
+            }
+            if (planResumenEstado) {
+                planResumenEstado.textContent = '';
+            }
+            if (cardActividadesManuales) {
+                cardActividadesManuales.classList.remove('d-none');
+            }
+            if (cardActividadesEstandar) {
+                cardActividadesEstandar.classList.add('d-none');
+            }
+            if (listaActividadesEstandar) {
+                listaActividadesEstandar.innerHTML = '';
+            }
+            if (alertaActividadesEstandar) {
+                alertaActividadesEstandar.classList.remove('d-none');
+            }
+        }
+
+        function activarModoPlantilla(plan) {
+            if (planEstandarHidden) {
+                planEstandarHidden.value = plan.id || '';
+            }
+
+            if (planResumen) {
+                planResumen.classList.remove('d-none');
+            }
+            if (planResumenNombre) {
+                planResumenNombre.textContent = plan.nombre || 'Plan estándar';
+            }
+            if (planResumenDescripcion) {
+                planResumenDescripcion.textContent = plan.descripcion || '';
+            }
+            if (planResumenVersion) {
+                planResumenVersion.textContent = plan.version ? 'Versión ' + plan.version : '';
+            }
+            if (planResumenEstado) {
+                planResumenEstado.textContent = 'Plantilla vigente';
+            }
+            if (cardActividadesManuales) {
+                cardActividadesManuales.classList.add('d-none');
+            }
+            if (cardActividadesEstandar) {
+                cardActividadesEstandar.classList.remove('d-none');
+            }
+            if (fechaFinInput) {
+                fechaFinInput.readOnly = true;
+            }
+        }
+
+        function activarModoPersonalizado() {
+            if (planEstandarHidden) {
+                planEstandarHidden.value = '';
+            }
+            if (planResumen) {
+                planResumen.classList.add('d-none');
+            }
+            if (cardActividadesManuales) {
+                cardActividadesManuales.classList.remove('d-none');
+            }
+            if (cardActividadesEstandar) {
+                cardActividadesEstandar.classList.add('d-none');
+            }
+            if (listaActividadesEstandar) {
+                listaActividadesEstandar.innerHTML = '';
+            }
+            if (alertaActividadesEstandar) {
+                alertaActividadesEstandar.classList.remove('d-none');
+            }
+            if (fechaFinInput) {
+                fechaFinInput.readOnly = false;
+            }
+        }
+
+        function renderActividadesEstandar(actividades) {
+            if (!listaActividadesEstandar) {
+                return;
+            }
+
+            listaActividadesEstandar.innerHTML = '';
+
+            if (!Array.isArray(actividades) || actividades.length === 0) {
+                if (alertaActividadesEstandar) {
+                    alertaActividadesEstandar.classList.remove('d-none');
+                }
+                return;
+            }
+
+            if (alertaActividadesEstandar) {
+                alertaActividadesEstandar.classList.add('d-none');
+            }
+
+            actividades.forEach((actividad, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'border rounded p-3 mb-2';
+                wrapper.innerHTML = `
+                    <div class=\"d-flex justify-content-between align-items-start\">
+                        <div>
+                            <strong>${actividad.nombre || 'Actividad'}</strong>
+                            <div class=\"small text-muted mb-1\">${actividad.descripcion || ''}</div>
+                        </div>
+                        <span class=\"badge badge-light\">Actividad ${index + 1}</span>
+                    </div>
+                    <div class=\"text-muted small mb-0\">
+                        ${(actividad.fecha_inicio || '-')} → ${(actividad.fecha_fin || '-')}
+                    </div>
+                `;
+                listaActividadesEstandar.appendChild(wrapper);
+            });
+        }
+
+        async function cargarPlanesEstandarPorDiagnostico() {
+            if (!planEstandarSelector) {
+                return;
+            }
+
+            const diagnosticoId = diagnosticoSelect ? diagnosticoSelect.value : '';
+            const pacienteId = pacienteIdInput ? pacienteIdInput.value : '';
+            const planPersistido = planEstandarHidden ? planEstandarHidden.value : '';
+
+            planEstandarSelector.innerHTML = '<option value=\"\">Plan personalizado (sin plantilla)</option>';
+
+            if (!diagnosticoId) {
+                planEstandarSelector.disabled = true;
+                if (planPersistido) {
+                    activarModoPlantilla({ id: planPersistido, nombre: 'Plan estándar' });
+                } else {
+                    activarModoPersonalizado();
+                }
+                return;
+            }
+
+            try {
+                const url = '<?= route_to('medico_planes_plantillas_diagnostico') ?>?diagnostico_id=' + encodeURIComponent(diagnosticoId) + '&paciente_id=' + encodeURIComponent(pacienteId);
+                const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                const payload = await response.json();
+
+                if (!response.ok || !payload.success) {
+                    planEstandarSelector.disabled = true;
+                    if (planPersistido) {
+                        activarModoPlantilla({ id: planPersistido, nombre: 'Plan estándar' });
+                    } else {
+                        activarModoPersonalizado();
+                    }
+                    return;
+                }
+
+                const seleccionado = planEstandarHidden ? planEstandarHidden.value : '';
+
+                (payload.data && payload.data.planes ? payload.data.planes : []).forEach((plan) => {
+                    const option = document.createElement('option');
+                    option.value = plan.id;
+                    option.textContent = plan.nombre || 'Plan estándar';
+                    option.dataset.descripcion = plan.descripcion || '';
+                    option.dataset.version = plan.version || '';
+                    if (seleccionado && String(seleccionado) === String(plan.id)) {
+                        option.selected = true;
+                    }
+                    planEstandarSelector.appendChild(option);
+                });
+
+                planEstandarSelector.disabled = false;
+
+                if (planEstandarSelector.value) {
+                    await previsualizarPlanEstandar();
+                } else if (planPersistido) {
+                    activarModoPlantilla({ id: planPersistido, nombre: 'Plan estándar' });
+                }
+
+                if (planEstandarSelector.dataset.locked === '1') {
+                    planEstandarSelector.disabled = true;
+                }
+            } catch (error) {
+                planEstandarSelector.disabled = true;
+                if (planPersistido) {
+                    activarModoPlantilla({ id: planPersistido, nombre: 'Plan estándar' });
+                } else {
+                    activarModoPersonalizado();
+                }
+            }
+        }
+
+        async function previsualizarPlanEstandar() {
+            const planId = planEstandarSelector && planEstandarSelector.value
+                ? planEstandarSelector.value
+                : (planEstandarHidden ? planEstandarHidden.value : '');
+            const diagnosticoId = diagnosticoSelect ? diagnosticoSelect.value : '';
+            const pacienteId = pacienteIdInput ? pacienteIdInput.value : '';
+            const fechaInicio = fechaInicioInput ? fechaInicioInput.value : '';
+            const fechaFin = fechaFinInput ? fechaFinInput.value : '';
+
+            if (!planId) {
+                activarModoPersonalizado();
+                return;
+            }
+
+            if (!fechaInicio) {
+                activarModoPlantilla({ id: planId, nombre: planEstandarSelector.options[planEstandarSelector.selectedIndex]?.textContent || 'Plan estándar' });
+                renderActividadesEstandar([]);
+                if (alertaActividadesEstandar) {
+                    alertaActividadesEstandar.classList.remove('d-none');
+                    alertaActividadesEstandar.textContent = 'Selecciona la fecha de inicio para calcular las actividades y la fecha fin.';
+                }
+                return;
+            }
+
+            try {
+                const response = await fetch('<?= route_to('medico_planes_previsualizar') ?>', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams({
+                        plan_estandar_id: planId,
+                        diagnostico_id: diagnosticoId,
+                        paciente_id: pacienteId,
+                        fecha_inicio: fechaInicio,
+                        fecha_fin: fechaFin
+                    }).toString()
+                });
+
+                const payload = await response.json();
+
+                if (!response.ok || !payload.success) {
+                    activarModoPlantilla({ id: planId, nombre: planEstandarSelector.options[planEstandarSelector.selectedIndex]?.textContent || 'Plan estándar' });
+                    renderActividadesEstandar([]);
+                    if (alertaActividadesEstandar) {
+                        alertaActividadesEstandar.textContent = (payload && payload.message) ? payload.message : 'No se pudieron generar las actividades.';
+                        alertaActividadesEstandar.classList.remove('d-none');
+                    }
+                    return;
+                }
+
+                const plan = payload.data && payload.data.plan ? payload.data.plan : { id: planId };
+                activarModoPlantilla(plan);
+                renderActividadesEstandar(payload.data && payload.data.actividades ? payload.data.actividades : []);
+                const fechaFinCalculada = payload.data && payload.data.fecha_fin_calculada ? payload.data.fecha_fin_calculada : '';
+                if (fechaFinInput && fechaFinCalculada) {
+                    fechaFinInput.value = fechaFinCalculada;
+                }
+            } catch (error) {
+                activarModoPlantilla({ id: planId, nombre: planEstandarSelector && planEstandarSelector.options[planEstandarSelector.selectedIndex] ? planEstandarSelector.options[planEstandarSelector.selectedIndex].textContent : 'Plan estándar' });
+                renderActividadesEstandar([]);
+                if (alertaActividadesEstandar) {
+                    alertaActividadesEstandar.textContent = 'No se pudieron generar las actividades. Intenta nuevamente.';
+                    alertaActividadesEstandar.classList.remove('d-none');
+                }
+            }
+        }
+
         function seleccionarPaciente(paciente) {
             if (pacienteIdInput) {
                 pacienteIdInput.value = paciente.id || '';
@@ -110,6 +398,7 @@
             }
 
             filtrarDiagnosticosPorPaciente();
+            resetPlanEstandar();
             limpiarResultados();
         }
 
@@ -139,6 +428,7 @@
                 diagnosticoSelect.disabled = true;
             }
 
+            resetPlanEstandar();
             limpiarResultados();
         }
 
@@ -295,6 +585,38 @@
         if (pacienteIdInput && pacienteIdInput.value && diagnosticoSelect) {
             diagnosticoSelect.disabled = false;
             filtrarDiagnosticosPorPaciente();
+        }
+
+        if (diagnosticoSelect) {
+            diagnosticoSelect.addEventListener('change', () => {
+                cargarPlanesEstandarPorDiagnostico();
+            });
+        }
+
+        if (planEstandarSelector) {
+            planEstandarSelector.addEventListener('change', () => {
+                const valor = planEstandarSelector.value;
+                if (planEstandarHidden) {
+                    planEstandarHidden.value = valor;
+                }
+                if (!valor) {
+                    activarModoPersonalizado();
+                    return;
+                }
+                previsualizarPlanEstandar();
+            });
+        }
+
+        if (fechaInicioInput) {
+            fechaInicioInput.addEventListener('change', previsualizarPlanEstandar);
+        }
+
+        if (fechaFinInput) {
+            fechaFinInput.addEventListener('change', previsualizarPlanEstandar);
+        }
+
+        if (planEstandarHidden && planEstandarHidden.value) {
+            cargarPlanesEstandarPorDiagnostico();
         }
     })();
 </script>
