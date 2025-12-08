@@ -39,6 +39,15 @@ $routes->group('admin', ['filter' => 'auth'], function ($routes) {
     $routes->get('perfil', 'Admin\Perfil::index', ['as' => 'admin_perfil_index']);
     $routes->post('perfil/datos', 'Admin\Perfil::actualizarDatos', ['as' => 'admin_perfil_actualizar_datos']);
     $routes->post('perfil/password', 'Admin\Perfil::actualizarPassword', ['as' => 'admin_perfil_actualizar_password']);
+
+    // Planes Estándar
+    $routes->get('planes-estandar', 'Admin\PlanesEstandar::index', ['as' => 'admin_planes_estandar_index']);
+    $routes->get('planes-estandar/new', 'Admin\PlanesEstandar::new', ['as' => 'admin_planes_estandar_new']);
+    $routes->post('planes-estandar/create', 'Admin\PlanesEstandar::create', ['as' => 'admin_planes_estandar_create']);
+    $routes->get('planes-estandar/edit/(:num)', 'Admin\PlanesEstandar::edit/$1', ['as' => 'admin_planes_estandar_edit']);
+    $routes->post('planes-estandar/update/(:num)', 'Admin\PlanesEstandar::update/$1', ['as' => 'admin_planes_estandar_update']);
+    $routes->get('planes-estandar/delete/(:num)', 'Admin\PlanesEstandar::delete/$1', ['as' => 'admin_planes_estandar_delete']);
+    $routes->get('planes-estandar/toggle/(:num)', 'Admin\PlanesEstandar::toggle/$1', ['as' => 'admin_planes_estandar_toggle']);
 });
 
 $routes->group('paciente', ['filter' => 'auth'], function ($routes) {
