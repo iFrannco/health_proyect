@@ -1220,7 +1220,8 @@ class Planes extends BaseController
                 'id'                     => $actividadId,
                 'indice'                 => $index,
                 'nombre'                 => $nombre,
-                'descripcion'            => $descripcion === '' ? null : $descripcion,
+                // Guardamos vacío en lugar de null para respetar columnas NOT NULL.
+                'descripcion'            => $descripcion === '' ? '' : $descripcion,
                 'fecha_inicio'           => $fechaInicio,
                 'fecha_fin'              => $fechaFin,
                 'categoria_actividad_id' => $categoriaId,

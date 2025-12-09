@@ -15,6 +15,7 @@ class PlanEstandarActividadModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'plan_estandar_id',
+        'categoria_actividad_id',
         'nombre',
         'descripcion',
         'offset_inicio_dias',
@@ -39,6 +40,7 @@ class PlanEstandarActividadModel extends Model
     // Validation
     protected $validationRules      = [
         'plan_estandar_id'        => 'required|integer',
+        'categoria_actividad_id'  => 'required|is_natural_no_zero',
         'nombre'                  => 'required|min_length[3]|max_length[180]',
         'frecuencia_repeticiones' => 'permit_empty|integer',
         'duracion_valor'          => 'permit_empty|integer',

@@ -11,6 +11,7 @@ class PlanEstandarActividad extends Entity
     protected $casts   = [
         'id'                      => 'integer',
         'plan_estandar_id'        => 'integer',
+        'categoria_actividad_id'  => '?integer',
         'offset_inicio_dias'      => 'integer',
         'offset_fin_dias'         => 'integer',
         'orden'                   => 'integer',

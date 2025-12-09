@@ -13,13 +13,14 @@ class CarePlanTemplate
      * Genera actividades concretas a partir de actividades de plantilla.
      *
      * @param PlanEstandarActividad[] $actividadesPlantilla
+     * @param int|null $categoriaActividadFallbackId Categoría a usar si la actividad de plantilla no tiene asignada.
      * @return array{actividades: array<int, array<string, mixed>>, errores: string[]}
      */
     public function materializar(
         array $actividadesPlantilla,
         string $fechaInicioPlan,
         ?string $fechaFinPlan,
-        int $categoriaActividadId
+        ?int $categoriaActividadFallbackId = null
     ): array {
         $errores = [];
         $actividadesGeneradas = [];
@@ -67,6 +68,16 @@ class CarePlanTemplate
                 continue;
             }
 
+            $categoriaActividadId = (int) ($actividad->categoria_actividad_id ?? 0);
+            if ($categoriaActividadId <= 0 && $categoriaActividadFallbackId !== null) {
+                $categoriaActividadId = $categoriaActividadFallbackId;
+            }
+
+            if ($categoriaActividadId <= 0) {
+                $errores[] = 'La actividad "' . ($actividad->nombre ?? 'Sin nombre') . '" no tiene una categoría asignada.';
+                continue;
+            }
+
             $ultimoDiaActividad = $offsetInicio + ($periodos * $diasPorPeriodo) - 1;
             if ($ultimoDiaActividad > $maxDiasCobertura) {
                 $maxDiasCobertura = $ultimoDiaActividad;
@@ -87,10 +98,11 @@ class CarePlanTemplate
                     $fechaStr = $fechaActividad->format('Y-m-d');
                     $nombreActividad = (string) ($actividad->nombre ?? 'Actividad');
                     $descripcionActividad = (string) ($actividad->descripcion ?? '');
+                    $descripcionActividad = $descripcionActividad !== '' ? $descripcionActividad : '';
 
                     $actividadesGeneradas[] = [
                         'nombre'                 => $nombreActividad,
-                        'descripcion'            => $descripcionActividad !== '' ? $descripcionActividad : null,
+                        'descripcion'            => $descripcionActividad,
                         'fecha_inicio'           => $fechaStr,
                         'fecha_fin'              => $fechaStr,
                         'categoria_actividad_id' => $categoriaActividadId,

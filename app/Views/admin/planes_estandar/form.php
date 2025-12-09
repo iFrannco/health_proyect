@@ -3,6 +3,36 @@
 <?= $this->section('title') ?><?= isset($plan) ? 'Editar' : 'Nuevo' ?> Plan Estandarizado<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
+<?php
+    $categoriasActividad = $categoriasActividad ?? [];
+    $categoriaDefaultId = '';
+
+    foreach ($categoriasActividad as $categoria) {
+        if ((int) ($categoria['id'] ?? 0) === 1 && (int) ($categoria['activo'] ?? 0) === 1) {
+            $categoriaDefaultId = 1;
+            break;
+        }
+    }
+
+    if ($categoriaDefaultId === '' && ! empty($categoriasActividad)) {
+        foreach ($categoriasActividad as $categoria) {
+            if ((int) ($categoria['activo'] ?? 0) === 1) {
+                $categoriaDefaultId = (int) ($categoria['id'] ?? 0);
+                break;
+            }
+        }
+    }
+
+    if ($categoriaDefaultId === '' && ! empty($categoriasActividad)) {
+        $categoriaDefaultId = (int) ($categoriasActividad[0]['id'] ?? 0);
+    }
+
+    $opcionesCategoria = '<option value="">Selecciona una categoría</option>';
+    foreach ($categoriasActividad as $categoria) {
+        $selected = ($categoriaDefaultId !== '' && (int) $categoriaDefaultId === (int) ($categoria['id'] ?? 0)) ? ' selected' : '';
+        $opcionesCategoria .= '<option value="' . esc($categoria['id'], 'attr') . '"' . $selected . '>' . esc($categoria['nombre'] ?? '', 'attr') . '</option>';
+    }
+?>
 <form action="<?= isset($plan) ? base_url('admin/planes-estandar/update/' . $plan->id) : base_url('admin/planes-estandar/create') ?>" method="post" id="formPlan">
     <?= csrf_field() ?>
     
@@ -12,10 +42,20 @@
             <h3 class="card-title">Datos Generales</h3>
         </div>
         <div class="card-body">
-            <?php if (session()->getFlashdata('errors')): ?>
+            <?php
+                $erroresFlash = session()->getFlashdata('errors');
+                $mensajeError = session()->getFlashdata('error');
+            ?>
+            <?php if ($mensajeError): ?>
+                <div class="alert alert-danger mb-2">
+                    <?= esc($mensajeError) ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (! empty($erroresFlash) && is_array($erroresFlash)): ?>
                 <div class="alert alert-danger">
-                    <ul>
-                    <?php foreach (session()->getFlashdata('errors') as $error): ?>
+                    <ul class="mb-0">
+                    <?php foreach ($erroresFlash as $error): ?>
                         <li><?= esc($error) ?></li>
                     <?php endforeach; ?>
                     </ul>
@@ -81,12 +121,13 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th style="width: 25%">Nombre *</th>
-                        <th style="width: 20%">Descripción</th>
-                        <th style="width: 20%">Frecuencia</th>
-                        <th style="width: 20%">Duración</th>
-                        <th style="width: 10%">Día Inicio</th>
-                        <th style="width: 5%"></th>
+                        <th style="width: 20%">Nombre *</th>
+                        <th style="width: 18%">Categoría *</th>
+                        <th style="width: 18%">Descripción</th>
+                        <th style="width: 16%">Frecuencia</th>
+                        <th style="width: 16%">Duración</th>
+                        <th style="width: 8%">Día Inicio</th>
+                        <th style="width: 4%"></th>
                     </tr>
                 </thead>
                 <tbody id="contenedorActividades">
@@ -102,6 +143,17 @@
                                 <td>
                                     <input type="hidden" name="actividades[<?= $index ?>][id]" value="<?= $act->id ?>">
                                     <input type="text" name="actividades[<?= $index ?>][nombre]" class="form-control form-control-sm" value="<?= esc($act->nombre) ?>" placeholder="Nombre actividad" required>
+                                </td>
+                                <td>
+                                    <select name="actividades[<?= $index ?>][categoria_actividad_id]" class="form-control form-control-sm" required>
+                                        <option value="">Selecciona una categoría</option>
+                                        <?php foreach ($categoriasActividad as $categoria): ?>
+                                            <?php $selectedCategoria = (int) ($act->categoria_actividad_id ?? $categoriaDefaultId) === (int) ($categoria['id'] ?? 0); ?>
+                                            <option value="<?= esc($categoria['id']) ?>" <?= $selectedCategoria ? 'selected' : '' ?>>
+                                                <?= esc($categoria['nombre'] ?? '') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </td>
                                 <td>
                                     <input type="text" name="actividades[<?= $index ?>][descripcion]" class="form-control form-control-sm" value="<?= esc($act->descripcion) ?>" placeholder="Opcional">
@@ -154,6 +206,7 @@
 
 <script>
     let actividadIndex = <?= isset($actividadesList) ? count($actividadesList) : 0 ?>;
+    const opcionesCategoria = <?= json_encode($opcionesCategoria, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
 
     function agregarFilaActividad() {
         const contenedor = document.getElementById('contenedorActividades');
@@ -165,6 +218,11 @@
         row.innerHTML = `
             <td>
                 <input type="text" name="actividades[${actividadIndex}][nombre]" class="form-control form-control-sm" placeholder="Nombre actividad" required>
+            </td>
+            <td>
+                <select name="actividades[${actividadIndex}][categoria_actividad_id]" class="form-control form-control-sm" required>
+                    ${opcionesCategoria}
+                </select>
             </td>
             <td>
                 <input type="text" name="actividades[${actividadIndex}][descripcion]" class="form-control form-control-sm" placeholder="Opcional">

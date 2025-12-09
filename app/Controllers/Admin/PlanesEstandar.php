@@ -3,6 +3,7 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
+use App\Models\CategoriaActividadModel;
 use App\Models\PlanEstandarModel;
 use App\Models\PlanEstandarActividadModel;
 use App\Models\TipoDiagnosticoModel;
@@ -13,12 +14,14 @@ class PlanesEstandar extends BaseController
     protected $planModel;
     protected $actividadModel;
     protected $tipoDiagnosticoModel;
+    protected $categoriaActividadModel;
 
     public function __construct()
     {
         $this->planModel = new PlanEstandarModel();
         $this->actividadModel = new PlanEstandarActividadModel();
         $this->tipoDiagnosticoModel = new TipoDiagnosticoModel();
+        $this->categoriaActividadModel = new CategoriaActividadModel();
     }
 
     public function index()
@@ -39,7 +42,8 @@ class PlanesEstandar extends BaseController
         return view('admin/planes_estandar/form', $this->layoutData() + [
             'plan' => null,
             'tipos_diagnostico' => $this->tipoDiagnosticoModel->findActivos(),
-            'actividades' => []
+            'actividades' => [],
+            'categoriasActividad' => $this->obtenerCategoriasConAsignadas([]),
         ]);
     }
 
@@ -59,6 +63,16 @@ class PlanesEstandar extends BaseController
             // Si back() lleva a new(), new() carga layoutData. Todo bien.
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
+
+        $catalogoCategorias = $this->obtenerCatalogoCategorias();
+        if (empty($catalogoCategorias)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Configura categorías de actividad antes de crear una plantilla.')
+                ->with('errors', ['categorias' => 'No hay categorías de actividad disponibles.']);
+        }
+        $categoriasLookup = $this->crearLookupCategorias($catalogoCategorias);
+        $categoriaDefaultId = $this->elegirCategoriaDefault($catalogoCategorias);
 
         $db = \Config\Database::connect();
         $db->transStart();
@@ -93,9 +107,22 @@ class PlanesEstandar extends BaseController
                 
                 $offsetInicio = (int)($act['offset_inicio_dias'] ?? 0);
                 $offsetFin = $offsetInicio + ($duracionVal * $factor);
+                $categoriaId = isset($act['categoria_actividad_id']) ? (int) $act['categoria_actividad_id'] : 0;
+                if ($categoriaId <= 0 && $categoriaDefaultId !== null) {
+                    $categoriaId = $categoriaDefaultId;
+                }
+                if ($categoriaId <= 0 || ! isset($categoriasLookup[$categoriaId])) {
+                    $db->transRollback();
+
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Selecciona una categoría válida para cada actividad.')
+                        ->with('errors', ['categorias' => 'Elige una categoría válida para las actividades.']);
+                }
 
                 $dataAct = [
                     'plan_estandar_id'        => $planId,
+                    'categoria_actividad_id'  => $categoriaId,
                     'nombre'                  => $act['nombre'],
                     'descripcion'             => $act['descripcion'],
                     'frecuencia_repeticiones' => $act['frecuencia_repeticiones'],
@@ -110,7 +137,12 @@ class PlanesEstandar extends BaseController
 
                 if (!$this->actividadModel->insert($dataAct)) {
                     $db->transRollback();
-                    return redirect()->back()->withInput()->with('error', 'Error al guardar una actividad.');
+                    $erroresActividad = $this->actividadModel->errors();
+
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Error al guardar una actividad.')
+                        ->with('errors', $erroresActividad);
                 }
             }
         }
@@ -140,7 +172,8 @@ class PlanesEstandar extends BaseController
         return view('admin/planes_estandar/form', $this->layoutData() + [
             'plan' => $plan,
             'tipos_diagnostico' => $this->tipoDiagnosticoModel->findActivos(),
-            'actividades' => $actividades
+            'actividades' => $actividades,
+            'categoriasActividad' => $this->obtenerCategoriasConAsignadas($actividades),
         ]);
     }
 
@@ -160,6 +193,16 @@ class PlanesEstandar extends BaseController
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
+
+        $catalogoCategorias = $this->obtenerCatalogoCategorias();
+        if (empty($catalogoCategorias)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Configura categorías de actividad antes de editar una plantilla.')
+                ->with('errors', ['categorias' => 'No hay categorías de actividad disponibles.']);
+        }
+        $categoriasLookup = $this->crearLookupCategorias($catalogoCategorias);
+        $categoriaDefaultId = $this->elegirCategoriaDefault($catalogoCategorias);
 
         $db = \Config\Database::connect();
         $db->transStart();
@@ -198,9 +241,22 @@ class PlanesEstandar extends BaseController
             
             $offsetInicio = (int)($act['offset_inicio_dias'] ?? 0);
             $offsetFin = $offsetInicio + ($duracionVal * $factor);
+            $categoriaId = isset($act['categoria_actividad_id']) ? (int) $act['categoria_actividad_id'] : 0;
+            if ($categoriaId <= 0 && $categoriaDefaultId !== null) {
+                $categoriaId = $categoriaDefaultId;
+            }
+            if ($categoriaId <= 0 || ! isset($categoriasLookup[$categoriaId])) {
+                $db->transRollback();
+
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Selecciona una categoría válida para cada actividad.')
+                    ->with('errors', ['categorias' => 'Elige una categoría válida para las actividades.']);
+            }
 
             $dataAct = [
                 'plan_estandar_id'        => $id,
+                'categoria_actividad_id'  => $categoriaId,
                 'nombre'                  => $act['nombre'],
                 'descripcion'             => $act['descripcion'],
                 'frecuencia_repeticiones' => $act['frecuencia_repeticiones'],
@@ -216,13 +272,23 @@ class PlanesEstandar extends BaseController
                 $dataAct['id'] = $actId;
                 if (!$this->actividadModel->save($dataAct)) {
                     $db->transRollback();
-                    return redirect()->back()->withInput()->with('error', 'Error al actualizar actividad.');
+                    $erroresActividad = $this->actividadModel->errors();
+
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Error al actualizar actividad.')
+                        ->with('errors', $erroresActividad);
                 }
                 $idsEnviados[] = $actId;
             } else {
                 if (!$this->actividadModel->insert($dataAct)) {
                     $db->transRollback();
-                    return redirect()->back()->withInput()->with('error', 'Error al insertar nueva actividad.');
+                    $erroresActividad = $this->actividadModel->errors();
+
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Error al insertar nueva actividad.')
+                        ->with('errors', $erroresActividad);
                 }
             }
         }
@@ -264,5 +330,81 @@ class PlanesEstandar extends BaseController
     public function delete($id)
     {
         return $this->toggle($id);
+    }
+
+    /**
+     * @param array<int, \App\Entities\PlanEstandarActividad> $actividades
+     * @return array<int, array<string, mixed>>
+     */
+    private function obtenerCategoriasConAsignadas(array $actividades): array
+    {
+        $categorias = $this->categoriaActividadModel->findActivas();
+        $categoriasPorId = [];
+
+        foreach ($categorias as $categoria) {
+            $id = (int) ($categoria['id'] ?? 0);
+            if ($id > 0) {
+                $categoriasPorId[$id] = $categoria;
+            }
+        }
+
+        foreach ($actividades as $actividad) {
+            $categoriaId = (int) ($actividad->categoria_actividad_id ?? 0);
+            if ($categoriaId > 0 && ! isset($categoriasPorId[$categoriaId])) {
+                $extra = $this->categoriaActividadModel->find($categoriaId);
+                if (is_array($extra) && ! empty($extra)) {
+                    $categoriasPorId[$categoriaId] = $extra;
+                }
+            }
+        }
+
+        usort($categoriasPorId, static function (array $a, array $b): int {
+            return strcmp($a['nombre'] ?? '', $b['nombre'] ?? '');
+        });
+
+        return array_values($categoriasPorId);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function obtenerCatalogoCategorias(): array
+    {
+        return $this->categoriaActividadModel
+            ->asArray()
+            ->orderBy('nombre', 'ASC')
+            ->findAll();
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $categorias
+     */
+    private function crearLookupCategorias(array $categorias): array
+    {
+        $ids = array_filter(
+            array_map(static fn ($categoria) => (int) ($categoria['id'] ?? 0), $categorias),
+            static fn (int $id): bool => $id > 0
+        );
+        return array_fill_keys($ids, true);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $categorias
+     */
+    private function elegirCategoriaDefault(array $categorias): ?int
+    {
+        foreach ($categorias as $categoria) {
+            if ((int) ($categoria['id'] ?? 0) === 1 && (int) ($categoria['activo'] ?? 0) === 1) {
+                return 1;
+            }
+        }
+
+        foreach ($categorias as $categoria) {
+            if ((int) ($categoria['activo'] ?? 0) === 1) {
+                return (int) $categoria['id'];
+            }
+        }
+
+        return isset($categorias[0]['id']) ? (int) $categorias[0]['id'] : null;
     }
 }
