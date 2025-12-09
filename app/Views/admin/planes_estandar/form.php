@@ -207,11 +207,39 @@
 <script>
     let actividadIndex = <?= isset($actividadesList) ? count($actividadesList) : 0 ?>;
     const opcionesCategoria = <?= json_encode($opcionesCategoria, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    const contenedorActividades = document.getElementById('contenedorActividades');
+    const msgSinActividades = document.getElementById('msgSinActividades');
+    const formPlan = document.getElementById('formPlan');
+
+    function ocultarMensajeActividades() {
+        if (msgSinActividades) {
+            msgSinActividades.style.display = 'none';
+        }
+    }
+
+    function mostrarMensajeActividades(error = false) {
+        if (!msgSinActividades) {
+            return;
+        }
+
+        if (error) {
+            msgSinActividades.textContent = 'Agrega al menos una actividad antes de guardar el plan.';
+            msgSinActividades.classList.remove('text-muted', 'font-italic');
+            msgSinActividades.classList.add('text-danger', 'font-weight-bold');
+        } else {
+            msgSinActividades.textContent = 'No hay actividades definidas. Haga clic en "+ Agregar Actividad".';
+            msgSinActividades.classList.remove('text-danger', 'font-weight-bold');
+            msgSinActividades.classList.add('text-muted', 'font-italic');
+        }
+
+        msgSinActividades.style.display = 'block';
+    }
 
     function agregarFilaActividad() {
-        const contenedor = document.getElementById('contenedorActividades');
-        const msg = document.getElementById('msgSinActividades');
-        msg.style.display = 'none';
+        if (!contenedorActividades) {
+            return;
+        }
+        ocultarMensajeActividades();
 
         const row = document.createElement('tr');
         row.className = 'fila-actividad';
@@ -256,9 +284,9 @@
                 <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(this)">
                     <i class="fas fa-trash"></i>
                 </button>
-            </td>
+        </td>
         `;
-        contenedor.appendChild(row);
+        contenedorActividades.appendChild(row);
         actividadIndex++;
     }
 
@@ -266,11 +294,18 @@
         const row = btn.closest('tr');
         row.remove();
         
-        const contenedor = document.getElementById('contenedorActividades');
-        if (contenedor.children.length === 0) {
-            document.getElementById('msgSinActividades').style.display = 'block';
+        if (contenedorActividades && contenedorActividades.children.length === 0) {
+            mostrarMensajeActividades();
         }
     }
-    
+
+    if (formPlan) {
+        formPlan.addEventListener('submit', function (event) {
+            if (contenedorActividades && contenedorActividades.children.length === 0) {
+                event.preventDefault();
+                mostrarMensajeActividades(true);
+            }
+        });
+    }
 </script>
 <?= $this->endSection() ?>

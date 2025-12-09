@@ -64,6 +64,14 @@ class PlanesEstandar extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $actividades = $this->obtenerActividadesDesdeRequest();
+        if (empty($actividades)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Agrega al menos una actividad al plan estándar.')
+                ->with('errors', ['actividades' => 'El plan estándar debe incluir al menos una actividad.']);
+        }
+
         $catalogoCategorias = $this->obtenerCatalogoCategorias();
         if (empty($catalogoCategorias)) {
             return redirect()->back()
@@ -95,17 +103,16 @@ class PlanesEstandar extends BaseController
         }
 
         // 2. Guardar Actividades
-        $actividades = $this->request->getPost('actividades');
-        if ($actividades && is_array($actividades)) {
+        if (! empty($actividades)) {
             foreach ($actividades as $act) {
                 // Calcular Offset Fin
-                $duracionVal = (int)$act['duracion_valor'];
+                $duracionVal = (int) $act['duracion_valor'];
                 $duracionUnit = $act['duracion_unidad'];
                 $factor = 1;
                 if ($duracionUnit === 'Semanas') $factor = 7;
                 if ($duracionUnit === 'Meses') $factor = 30;
                 
-                $offsetInicio = (int)($act['offset_inicio_dias'] ?? 0);
+                $offsetInicio = (int) ($act['offset_inicio_dias'] ?? 0);
                 $offsetFin = $offsetInicio + ($duracionVal * $factor);
                 $categoriaId = isset($act['categoria_actividad_id']) ? (int) $act['categoria_actividad_id'] : 0;
                 if ($categoriaId <= 0 && $categoriaDefaultId !== null) {
@@ -194,6 +201,14 @@ class PlanesEstandar extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $actividadesEnviadas = $this->obtenerActividadesDesdeRequest();
+        if (empty($actividadesEnviadas)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Agrega al menos una actividad al plan estándar.')
+                ->with('errors', ['actividades' => 'El plan estándar debe incluir al menos una actividad.']);
+        }
+
         $catalogoCategorias = $this->obtenerCatalogoCategorias();
         if (empty($catalogoCategorias)) {
             return redirect()->back()
@@ -223,9 +238,6 @@ class PlanesEstandar extends BaseController
         }
 
         // 2. Sincronizar Actividades
-        $actividadesEnviadas = $this->request->getPost('actividades');
-        if (!is_array($actividadesEnviadas)) $actividadesEnviadas = [];
-
         $actividadesActuales = $this->actividadModel->where('plan_estandar_id', $id)->findColumn('id') ?? [];
         $idsEnviados = [];
 
@@ -406,5 +418,50 @@ class PlanesEstandar extends BaseController
         }
 
         return isset($categorias[0]['id']) ? (int) $categorias[0]['id'] : null;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function obtenerActividadesDesdeRequest(): array
+    {
+        $actividades = $this->request->getPost('actividades');
+
+        if (!is_array($actividades)) {
+            return [];
+        }
+
+        $limpias = [];
+
+        foreach ($actividades as $act) {
+            $nombre = trim((string) ($act['nombre'] ?? ''));
+            $categoriaId = isset($act['categoria_actividad_id']) ? (int) $act['categoria_actividad_id'] : 0;
+            $descripcion = $act['descripcion'] ?? '';
+            $frecuenciaRepeticiones = (int) ($act['frecuencia_repeticiones'] ?? 0);
+            $frecuenciaPeriodo = $act['frecuencia_periodo'] ?? 'Día';
+            $duracionValor = (int) ($act['duracion_valor'] ?? 0);
+            $duracionUnidad = $act['duracion_unidad'] ?? 'Días';
+            $offsetInicio = isset($act['offset_inicio_dias']) ? (int) $act['offset_inicio_dias'] : 0;
+            $actividadId = isset($act['id']) ? (int) $act['id'] : null;
+
+            // Ignorar filas completamente vacías
+            if ($nombre === '' && $categoriaId === 0 && $frecuenciaRepeticiones === 0 && $duracionValor === 0) {
+                continue;
+            }
+
+            $limpias[] = [
+                'id'                       => $actividadId,
+                'nombre'                   => $nombre,
+                'categoria_actividad_id'   => $categoriaId,
+                'descripcion'              => $descripcion,
+                'frecuencia_repeticiones'  => $frecuenciaRepeticiones,
+                'frecuencia_periodo'       => $frecuenciaPeriodo,
+                'duracion_valor'           => $duracionValor,
+                'duracion_unidad'          => $duracionUnidad,
+                'offset_inicio_dias'       => $offsetInicio,
+            ];
+        }
+
+        return $limpias;
     }
 }
