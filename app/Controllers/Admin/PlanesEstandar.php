@@ -4,9 +4,11 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
 use App\Models\CategoriaActividadModel;
+use App\Models\PlanCuidadoModel;
 use App\Models\PlanEstandarModel;
 use App\Models\PlanEstandarActividadModel;
 use App\Models\TipoDiagnosticoModel;
+use App\Services\PlanEstadoService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
 class PlanesEstandar extends BaseController
@@ -15,6 +17,7 @@ class PlanesEstandar extends BaseController
     protected $actividadModel;
     protected $tipoDiagnosticoModel;
     protected $categoriaActividadModel;
+    protected $planCuidadoModel;
 
     public function __construct()
     {
@@ -22,6 +25,7 @@ class PlanesEstandar extends BaseController
         $this->actividadModel = new PlanEstandarActividadModel();
         $this->tipoDiagnosticoModel = new TipoDiagnosticoModel();
         $this->categoriaActividadModel = new CategoriaActividadModel();
+        $this->planCuidadoModel = new PlanCuidadoModel();
     }
 
     public function index()
@@ -44,6 +48,7 @@ class PlanesEstandar extends BaseController
             'tipos_diagnostico' => $this->tipoDiagnosticoModel->findActivos(),
             'actividades' => [],
             'categoriasActividad' => $this->obtenerCategoriasConAsignadas([]),
+            'actividadesBloqueadas' => false,
         ]);
     }
 
@@ -176,11 +181,14 @@ class PlanesEstandar extends BaseController
                                             ->orderBy('id', 'ASC')
                                             ->findAll();
 
+        $actividadesBloqueadas = $this->existePlanCuidadoActivo($id);
+
         return view('admin/planes_estandar/form', $this->layoutData() + [
             'plan' => $plan,
             'tipos_diagnostico' => $this->tipoDiagnosticoModel->findActivos(),
             'actividades' => $actividades,
             'categoriasActividad' => $this->obtenerCategoriasConAsignadas($actividades),
+            'actividadesBloqueadas' => $actividadesBloqueadas,
         ]);
     }
 
@@ -201,23 +209,31 @@ class PlanesEstandar extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $actividadesEnviadas = $this->obtenerActividadesDesdeRequest();
-        if (empty($actividadesEnviadas)) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Agrega al menos una actividad al plan estándar.')
-                ->with('errors', ['actividades' => 'El plan estándar debe incluir al menos una actividad.']);
-        }
+        $actividadesBloqueadas = $this->existePlanCuidadoActivo($id);
+        $catalogoCategorias = [];
+        $categoriasLookup = [];
+        $categoriaDefaultId = null;
+        $actividadesEnviadas = [];
 
-        $catalogoCategorias = $this->obtenerCatalogoCategorias();
-        if (empty($catalogoCategorias)) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Configura categorías de actividad antes de editar una plantilla.')
-                ->with('errors', ['categorias' => 'No hay categorías de actividad disponibles.']);
+        if (!$actividadesBloqueadas) {
+            $actividadesEnviadas = $this->obtenerActividadesDesdeRequest();
+            if (empty($actividadesEnviadas)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Agrega al menos una actividad al plan estándar.')
+                    ->with('errors', ['actividades' => 'El plan estándar debe incluir al menos una actividad.']);
+            }
+
+            $catalogoCategorias = $this->obtenerCatalogoCategorias();
+            if (empty($catalogoCategorias)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Configura categorías de actividad antes de editar una plantilla.')
+                    ->with('errors', ['categorias' => 'No hay categorías de actividad disponibles.']);
+            }
+            $categoriasLookup = $this->crearLookupCategorias($catalogoCategorias);
+            $categoriaDefaultId = $this->elegirCategoriaDefault($catalogoCategorias);
         }
-        $categoriasLookup = $this->crearLookupCategorias($catalogoCategorias);
-        $categoriaDefaultId = $this->elegirCategoriaDefault($catalogoCategorias);
 
         $db = \Config\Database::connect();
         $db->transStart();
@@ -237,77 +253,79 @@ class PlanesEstandar extends BaseController
              return redirect()->back()->withInput()->with('errors', $this->planModel->errors());
         }
 
-        // 2. Sincronizar Actividades
-        $actividadesActuales = $this->actividadModel->where('plan_estandar_id', $id)->findColumn('id') ?? [];
-        $idsEnviados = [];
+        // 2. Sincronizar Actividades (solo si no están bloqueadas)
+        if (!$actividadesBloqueadas) {
+            $actividadesActuales = $this->actividadModel->where('plan_estandar_id', $id)->findColumn('id') ?? [];
+            $idsEnviados = [];
 
-        foreach ($actividadesEnviadas as $act) {
-            $actId = isset($act['id']) ? (int)$act['id'] : null;
-            
-            // Cálculos
-            $duracionVal = (int)$act['duracion_valor'];
-            $duracionUnit = $act['duracion_unidad'];
-            $factor = 1;
-            if ($duracionUnit === 'Semanas') $factor = 7;
-            if ($duracionUnit === 'Meses') $factor = 30;
-            
-            $offsetInicio = (int)($act['offset_inicio_dias'] ?? 0);
-            $offsetFin = $offsetInicio + ($duracionVal * $factor);
-            $categoriaId = isset($act['categoria_actividad_id']) ? (int) $act['categoria_actividad_id'] : 0;
-            if ($categoriaId <= 0 && $categoriaDefaultId !== null) {
-                $categoriaId = $categoriaDefaultId;
-            }
-            if ($categoriaId <= 0 || ! isset($categoriasLookup[$categoriaId])) {
-                $db->transRollback();
-
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'Selecciona una categoría válida para cada actividad.')
-                    ->with('errors', ['categorias' => 'Elige una categoría válida para las actividades.']);
-            }
-
-            $dataAct = [
-                'plan_estandar_id'        => $id,
-                'categoria_actividad_id'  => $categoriaId,
-                'nombre'                  => $act['nombre'],
-                'descripcion'             => $act['descripcion'],
-                'frecuencia_repeticiones' => $act['frecuencia_repeticiones'],
-                'frecuencia_periodo'      => $act['frecuencia_periodo'],
-                'duracion_valor'          => $duracionVal,
-                'duracion_unidad'         => $duracionUnit,
-                'offset_inicio_dias'      => $offsetInicio,
-                'offset_fin_dias'         => $offsetFin,
-                'vigente'                 => 1, 
-            ];
-
-            if ($actId && in_array($actId, $actividadesActuales)) {
-                $dataAct['id'] = $actId;
-                if (!$this->actividadModel->save($dataAct)) {
+            foreach ($actividadesEnviadas as $act) {
+                $actId = isset($act['id']) ? (int) $act['id'] : null;
+                
+                // Cálculos
+                $duracionVal = (int) $act['duracion_valor'];
+                $duracionUnit = $act['duracion_unidad'];
+                $factor = 1;
+                if ($duracionUnit === 'Semanas') $factor = 7;
+                if ($duracionUnit === 'Meses') $factor = 30;
+                
+                $offsetInicio = (int) ($act['offset_inicio_dias'] ?? 0);
+                $offsetFin = $offsetInicio + ($duracionVal * $factor);
+                $categoriaId = isset($act['categoria_actividad_id']) ? (int) $act['categoria_actividad_id'] : 0;
+                if ($categoriaId <= 0 && $categoriaDefaultId !== null) {
+                    $categoriaId = $categoriaDefaultId;
+                }
+                if ($categoriaId <= 0 || ! isset($categoriasLookup[$categoriaId])) {
                     $db->transRollback();
-                    $erroresActividad = $this->actividadModel->errors();
 
                     return redirect()->back()
                         ->withInput()
-                        ->with('error', 'Error al actualizar actividad.')
-                        ->with('errors', $erroresActividad);
+                        ->with('error', 'Selecciona una categoría válida para cada actividad.')
+                        ->with('errors', ['categorias' => 'Elige una categoría válida para las actividades.']);
                 }
-                $idsEnviados[] = $actId;
-            } else {
-                if (!$this->actividadModel->insert($dataAct)) {
-                    $db->transRollback();
-                    $erroresActividad = $this->actividadModel->errors();
 
-                    return redirect()->back()
-                        ->withInput()
-                        ->with('error', 'Error al insertar nueva actividad.')
-                        ->with('errors', $erroresActividad);
+                $dataAct = [
+                    'plan_estandar_id'        => $id,
+                    'categoria_actividad_id'  => $categoriaId,
+                    'nombre'                  => $act['nombre'],
+                    'descripcion'             => $act['descripcion'],
+                    'frecuencia_repeticiones' => $act['frecuencia_repeticiones'],
+                    'frecuencia_periodo'      => $act['frecuencia_periodo'],
+                    'duracion_valor'          => $duracionVal,
+                    'duracion_unidad'         => $duracionUnit,
+                    'offset_inicio_dias'      => $offsetInicio,
+                    'offset_fin_dias'         => $offsetFin,
+                    'vigente'                 => 1, 
+                ];
+
+                if ($actId && in_array($actId, $actividadesActuales)) {
+                    $dataAct['id'] = $actId;
+                    if (!$this->actividadModel->save($dataAct)) {
+                        $db->transRollback();
+                        $erroresActividad = $this->actividadModel->errors();
+
+                        return redirect()->back()
+                            ->withInput()
+                            ->with('error', 'Error al actualizar actividad.')
+                            ->with('errors', $erroresActividad);
+                    }
+                    $idsEnviados[] = $actId;
+                } else {
+                    if (!$this->actividadModel->insert($dataAct)) {
+                        $db->transRollback();
+                        $erroresActividad = $this->actividadModel->errors();
+
+                        return redirect()->back()
+                            ->withInput()
+                            ->with('error', 'Error al insertar nueva actividad.')
+                            ->with('errors', $erroresActividad);
+                    }
                 }
             }
-        }
 
-        $idsBorrar = array_diff($actividadesActuales, $idsEnviados);
-        if (!empty($idsBorrar)) {
-            $this->actividadModel->delete($idsBorrar);
+            $idsBorrar = array_diff($actividadesActuales, $idsEnviados);
+            if (!empty($idsBorrar)) {
+                $this->actividadModel->delete($idsBorrar);
+            }
         }
 
         $db->transComplete();
@@ -316,8 +334,13 @@ class PlanesEstandar extends BaseController
              return redirect()->back()->withInput()->with('error', 'Error en la transacción al actualizar el plan.');
         }
 
+        $mensaje = 'Plan actualizado exitosamente.';
+        if ($actividadesBloqueadas) {
+            $mensaje .= ' Las actividades no se modificaron porque la plantilla está en uso por planes de cuidado en curso o sin iniciar.';
+        }
+
         return redirect()->to(base_url("admin/planes-estandar"))
-                         ->with('message', 'Plan actualizado exitosamente.');
+                         ->with('message', $mensaje);
     }
 
     public function toggle($id)
@@ -418,6 +441,17 @@ class PlanesEstandar extends BaseController
         }
 
         return isset($categorias[0]['id']) ? (int) $categorias[0]['id'] : null;
+    }
+
+    private function existePlanCuidadoActivo(int $planEstandarId): bool
+    {
+        return $this->planCuidadoModel
+            ->where('plan_estandar_id', $planEstandarId)
+            ->whereIn('estado', [
+                PlanEstadoService::ESTADO_EN_CURSO,
+                PlanEstadoService::ESTADO_SIN_INICIAR,
+            ])
+            ->countAllResults() > 0;
     }
 
     /**

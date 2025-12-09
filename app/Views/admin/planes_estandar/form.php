@@ -5,6 +5,7 @@
 <?= $this->section('content') ?>
 <?php
     $categoriasActividad = $categoriasActividad ?? [];
+    $bloqueaActividades = (bool) ($actividadesBloqueadas ?? false);
     $categoriaDefaultId = '';
 
     foreach ($categoriasActividad as $categoria) {
@@ -113,11 +114,16 @@
     <div class="card card-secondary">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">Actividades del Plan</h3>
-            <button type="button" class="btn btn-light btn-sm ml-auto" onclick="agregarFilaActividad()">
+            <button type="button" class="btn btn-light btn-sm ml-auto" onclick="agregarFilaActividad()" <?= $bloqueaActividades ? 'disabled title="No se pueden modificar actividades mientras existan planes de cuidado sin iniciar o en curso que usan esta plantilla."' : '' ?>>
                 <i class="fas fa-plus"></i> Agregar Actividad
             </button>
         </div>
         <div class="card-body p-0">
+            <?php if ($bloqueaActividades): ?>
+                <div class="alert alert-warning m-3">
+                    Las actividades están bloqueadas porque hay planes de cuidado sin iniciar o en curso que usan esta plantilla. Solo puedes editar los datos generales.
+                </div>
+            <?php endif; ?>
             <table class="table table-striped">
                 <thead>
                     <tr>
@@ -142,10 +148,10 @@
                             <tr class="fila-actividad">
                                 <td>
                                     <input type="hidden" name="actividades[<?= $index ?>][id]" value="<?= $act->id ?>">
-                                    <input type="text" name="actividades[<?= $index ?>][nombre]" class="form-control form-control-sm" value="<?= esc($act->nombre) ?>" placeholder="Nombre actividad" required>
+                                    <input type="text" name="actividades[<?= $index ?>][nombre]" class="form-control form-control-sm" value="<?= esc($act->nombre) ?>" placeholder="Nombre actividad" <?= $bloqueaActividades ? 'readonly' : 'required' ?>>
                                 </td>
                                 <td>
-                                    <select name="actividades[<?= $index ?>][categoria_actividad_id]" class="form-control form-control-sm" required>
+                                    <select name="actividades[<?= $index ?>][categoria_actividad_id]" class="form-control form-control-sm" <?= $bloqueaActividades ? 'disabled' : 'required' ?>>
                                         <option value="">Selecciona una categoría</option>
                                         <?php foreach ($categoriasActividad as $categoria): ?>
                                             <?php $selectedCategoria = (int) ($act->categoria_actividad_id ?? $categoriaDefaultId) === (int) ($categoria['id'] ?? 0); ?>
@@ -156,13 +162,13 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <input type="text" name="actividades[<?= $index ?>][descripcion]" class="form-control form-control-sm" value="<?= esc($act->descripcion) ?>" placeholder="Opcional">
+                                    <input type="text" name="actividades[<?= $index ?>][descripcion]" class="form-control form-control-sm" value="<?= esc($act->descripcion) ?>" placeholder="Opcional" <?= $bloqueaActividades ? 'readonly' : '' ?>>
                                 </td>
                                 <td>
                                     <div class="input-group input-group-sm">
-                                        <input type="number" name="actividades[<?= $index ?>][frecuencia_repeticiones]" class="form-control" value="<?= $act->frecuencia_repeticiones ?>" min="1" required>
+                                        <input type="number" name="actividades[<?= $index ?>][frecuencia_repeticiones]" class="form-control" value="<?= $act->frecuencia_repeticiones ?>" min="1" <?= $bloqueaActividades ? 'readonly' : 'required' ?>>
                                         <div class="input-group-append"><span class="input-group-text">veces al</span></div>
-                                        <select name="actividades[<?= $index ?>][frecuencia_periodo]" class="form-control">
+                                        <select name="actividades[<?= $index ?>][frecuencia_periodo]" class="form-control" <?= $bloqueaActividades ? 'disabled' : '' ?>>
                                             <option value="Día" <?= $act->frecuencia_periodo == 'Día' ? 'selected' : '' ?>>Día</option>
                                             <option value="Semana" <?= $act->frecuencia_periodo == 'Semana' ? 'selected' : '' ?>>Semana</option>
                                             <option value="Mes" <?= $act->frecuencia_periodo == 'Mes' ? 'selected' : '' ?>>Mes</option>
@@ -172,8 +178,8 @@
                                 <td>
                                     <div class="input-group input-group-sm">
                                         <div class="input-group-prepend"><span class="input-group-text">durante</span></div>
-                                        <input type="number" name="actividades[<?= $index ?>][duracion_valor]" class="form-control" value="<?= $act->duracion_valor ?>" min="1" required>
-                                        <select name="actividades[<?= $index ?>][duracion_unidad]" class="form-control">
+                                        <input type="number" name="actividades[<?= $index ?>][duracion_valor]" class="form-control" value="<?= $act->duracion_valor ?>" min="1" <?= $bloqueaActividades ? 'readonly' : 'required' ?>>
+                                        <select name="actividades[<?= $index ?>][duracion_unidad]" class="form-control" <?= $bloqueaActividades ? 'disabled' : '' ?>>
                                             <option value="Días" <?= $act->duracion_unidad == 'Días' ? 'selected' : '' ?>>Días</option>
                                             <option value="Semanas" <?= $act->duracion_unidad == 'Semanas' ? 'selected' : '' ?>>Semanas</option>
                                             <option value="Meses" <?= $act->duracion_unidad == 'Meses' ? 'selected' : '' ?>>Meses</option>
@@ -181,10 +187,10 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <input type="number" name="actividades[<?= $index ?>][offset_inicio_dias]" class="form-control form-control-sm" value="<?= $act->offset_inicio_dias ?? 0 ?>" min="0">
+                                    <input type="number" name="actividades[<?= $index ?>][offset_inicio_dias]" class="form-control form-control-sm" value="<?= $act->offset_inicio_dias ?? 0 ?>" min="0" <?= $bloqueaActividades ? 'readonly' : '' ?>>
                                 </td>
                                 <td>
-                                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(this)">
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(this)" <?= $bloqueaActividades ? 'disabled' : '' ?>>
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </td>
@@ -207,6 +213,7 @@
 <script>
     let actividadIndex = <?= isset($actividadesList) ? count($actividadesList) : 0 ?>;
     const opcionesCategoria = <?= json_encode($opcionesCategoria, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    const actividadesBloqueadas = <?= $bloqueaActividades ? 'true' : 'false' ?>;
     const contenedorActividades = document.getElementById('contenedorActividades');
     const msgSinActividades = document.getElementById('msgSinActividades');
     const formPlan = document.getElementById('formPlan');
@@ -236,6 +243,10 @@
     }
 
     function agregarFilaActividad() {
+        if (actividadesBloqueadas) {
+            mostrarMensajeActividades(true);
+            return;
+        }
         if (!contenedorActividades) {
             return;
         }
